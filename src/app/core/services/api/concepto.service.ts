@@ -41,8 +41,8 @@ export class ConceptoService {
     /**
      * Crear un nuevo concepto
      */
-    create(nombre: string, tipo: 'GASTO' | 'INGRESO'): Observable<ConceptoItem> {
-        return this.http.post<ApiResponse<ConceptoItem>>(this.apiUrl, { nombre, tipo })
+    create(nombre: string): Observable<ConceptoItem> {
+        return this.http.post<ApiResponse<ConceptoItem>>(this.apiUrl, { nombre })
             .pipe(map(response => response.data));
     }
 }

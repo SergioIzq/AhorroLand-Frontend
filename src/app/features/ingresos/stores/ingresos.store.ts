@@ -48,10 +48,10 @@ export const IngresosStore = signalStore(
     { providedIn: 'root' },
     withState(initialState),
     
-    withComputed((store) => ({
+    withComputed((store: any) => ({
         // Total calculado de ingresos
         total: computed(() =>
-            store.ingresos().reduce((sum, i) => sum + i.importe, 0)
+            store.ingresos().reduce((sum: number, i: Ingreso) => sum + i.importe, 0)
         ),
         
         // Cantidad de ingresos
@@ -64,7 +64,7 @@ export const IngresosStore = signalStore(
             
             if (!searchTerm) return ingresos;
             
-            return ingresos.filter(i =>
+            return ingresos.filter((i: Ingreso) =>
                 i.importe.toString().toLowerCase().includes(searchTerm) ||
                 i.categoriaNombre?.toLowerCase().includes(searchTerm) ||
                 i.descripcion?.toLowerCase().includes(searchTerm)
@@ -76,7 +76,7 @@ export const IngresosStore = signalStore(
             const ingresos = store.ingresos();
             const tipos: Record<string, { total: number; count: number }> = {};
             
-            ingresos.forEach(ingreso => {
+            ingresos.forEach((ingreso: Ingreso) => {
                 const tipo = ingreso.categoriaNombre || 'Sin tipo';
                 if (!tipos[tipo]) {
                     tipos[tipo] = { total: 0, count: 0 };
@@ -99,12 +99,12 @@ export const IngresosStore = signalStore(
         promedioIngresos: computed(() => {
             const ingresos = store.ingresos();
             return ingresos.length > 0 
-                ? ingresos.reduce((sum, i) => sum + i.importe, 0) / ingresos.length
+                ? ingresos.reduce((sum: number, i: Ingreso) => sum + i.importe, 0) / ingresos.length
                 : 0;
         })
     })),
     
-    withMethods((store, ingresoService = inject(IngresoService)) => ({
+    withMethods((store: any, ingresoService = inject(IngresoService)) => ({
         // Cargar ingresos
         loadIngresos: rxMethod<void>(
             pipe(
@@ -112,7 +112,7 @@ export const IngresosStore = signalStore(
                 switchMap(() =>
                     ingresoService.getAllIngresos().pipe(
                         tapResponse({
-                            next: (ingresos) => {
+                            next: (ingresos: Ingreso[]) => {
                                 patchState(store, {
                                     ingresos,
                                     loading: false,
@@ -147,7 +147,7 @@ export const IngresosStore = signalStore(
                 switchMap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) =>
                     ingresoService.getIngresos(page, pageSize, searchTerm, sortColumn, sortOrder).pipe(
                         tapResponse({
-                            next: (response) => {
+                            next: (response: any) => {
                                 console.log('[STORE] Respuesta recibida:', response);
                                 patchState(store, {
                                     ingresos: response.items,
@@ -172,11 +172,11 @@ export const IngresosStore = signalStore(
         // Cargar ingresos por período
         loadIngresosPorPeriodo: rxMethod<{ fechaInicio: string; fechaFin: string }>(
             pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
+                tap(({ fechaInicio, fechaFin }) => patchState(store, { loading: true, error: null })),
                 switchMap(({ fechaInicio, fechaFin }) =>
                     ingresoService.getIngresosPorPeriodo(fechaInicio, fechaFin).pipe(
                         tapResponse({
-                            next: (ingresos) => {
+                            next: (ingresos: Ingreso[]) => {
                                 patchState(store, {
                                     ingresos,
                                     loading: false,
@@ -198,11 +198,11 @@ export const IngresosStore = signalStore(
         // Crear ingreso
         createIngreso: rxMethod<IngresoCreate>(
             pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap((ingreso) =>
+                tap((ingreso: IngresoCreate) => patchState(store, { loading: true, error: null })),
+                switchMap((ingreso: IngresoCreate) =>
                     ingresoService.create(ingreso).pipe(
                         tapResponse({
-                            next: (newIngreso) => {
+                            next: (newIngreso: Ingreso) => {
                                 patchState(store, {
                                     ingresos: [...store.ingresos(), newIngreso],
                                     loading: false
@@ -223,12 +223,12 @@ export const IngresosStore = signalStore(
         // Actualizar ingreso
         updateIngreso: rxMethod<{ id: string; ingreso: Partial<Ingreso> }>(
             pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
+                tap(({ id, ingreso }) => patchState(store, { loading: true, error: null })),
                 switchMap(({ id, ingreso }) =>
                     ingresoService.update(id, ingreso).pipe(
                         tapResponse({
-                            next: (updatedIngreso) => {
-                                const ingresos = store.ingresos().map(i =>
+                            next: (updatedIngreso: Ingreso) => {
+                                const ingresos = store.ingresos().map((i: Ingreso) =>
                                     i.id === id ? updatedIngreso : i
                                 );
                                 patchState(store, { ingresos, loading: false });
@@ -248,12 +248,12 @@ export const IngresosStore = signalStore(
         // Eliminar ingreso
         deleteIngreso: rxMethod<string>(
             pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap((id) =>
+                tap((id: string) => patchState(store, { loading: true, error: null })),
+                switchMap((id: string) =>
                     ingresoService.delete(id).pipe(
                         tapResponse({
                             next: () => {
-                                const ingresos = store.ingresos().filter(i => i.id !== id);
+                                const ingresos = store.ingresos().filter((i: Ingreso) => i.id !== id);
                                 patchState(store, { ingresos, loading: false });
                             },
                             error: (error: any) => {

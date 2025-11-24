@@ -14,10 +14,7 @@ import { ConceptoService, ConceptoItem } from '@/core/services/api/concepto.serv
 import { CategoriaService, CategoriaItem } from '@/core/services/api/categoria.service';
 import { ProveedorService, ProveedorItem } from '@/core/services/api/proveedor.service';
 import { PersonaService, PersonaItem } from '@/core/services/api/persona.service';
-import { ConceptoCreateModalComponent } from './concepto-create-modal.component';
-import { CategoriaCreateModalComponent } from './categoria-create-modal.component';
-import { ProveedorCreateModalComponent } from './proveedor-create-modal.component';
-import { PersonaCreateModalComponent } from './persona-create-modal.component';
+import { ConceptoCreateModalComponent, CategoriaCreateModalComponent, ProveedorCreateModalComponent, PersonaCreateModalComponent } from '@/shared/components';
 
 interface CatalogItem {
     id: string;
@@ -132,7 +129,9 @@ interface GastoFormData extends Omit<Partial<Gasto>, 'fecha'> {
                     <div>
                         <label for="importe" class="block font-bold mb-3">Importe *</label>
                         <p-inputnumber id="importe" [(ngModel)]="formData.importe" mode="currency" currency="EUR" locale="es-ES" [min]="0" fluid />
-                        <small class="text-red-500" *ngIf="submitted() && !formData.importe"> El importe es requerido. </small>
+                        @if (submitted() && !formData.importe) {
+                            <small class="text-red-500"> El importe es requerido. </small>
+                        }
                     </div>
 
                     <!-- Fecha -->
@@ -156,9 +155,9 @@ interface GastoFormData extends Omit<Partial<Gasto>, 'fecha'> {
         </p-dialog>
 
         <!-- Modales inline para creación rápida -->
-        <app-concepto-create-modal [visible]="showConceptoCreateModal" [tipo]="'GASTO'" (visibleChange)="showConceptoCreateModal = $event" (created)="onConceptoCreated($event)" (cancel)="showConceptoCreateModal = false" />
+        <app-concepto-create-modal [visible]="showConceptoCreateModal" (visibleChange)="showConceptoCreateModal = $event" (created)="onConceptoCreated($event)" (cancel)="showConceptoCreateModal = false" />
 
-        <app-categoria-create-modal [visible]="showCategoriaCreateModal" [tipo]="'GASTO'" (visibleChange)="showCategoriaCreateModal = $event" (created)="onCategoriaCreated($event)" (cancel)="showCategoriaCreateModal = false" />
+        <app-categoria-create-modal [visible]="showCategoriaCreateModal" (visibleChange)="showCategoriaCreateModal = $event" (created)="onCategoriaCreated($event)" (cancel)="showCategoriaCreateModal = false" />
 
         <app-proveedor-create-modal [visible]="showProveedorCreateModal" (visibleChange)="showProveedorCreateModal = $event" (created)="onProveedorCreated($event)" (cancel)="showProveedorCreateModal = false" />
 
@@ -214,7 +213,7 @@ export class GastoFormModalComponent {
         effect(() => {
             this.isVisible = this.visible();
         });
-        
+
         // Cargar datos cuando cambia el gasto
         effect(() => {
             const gastoData = this.gasto();
@@ -234,28 +233,20 @@ export class GastoFormModalComponent {
         if (gastoData?.id) {
             // Modo edición
             this.isEditMode.set(true);
-            this.formData = { 
+            this.formData = {
                 ...gastoData,
                 // Convertir fecha de string a Date para p-datepicker
                 fecha: gastoData.fecha ? new Date(gastoData.fecha) : new Date()
             };
 
             // Cargar valores seleccionados en autocompletes como objetos completos
-            this.selectedConcepto = gastoData.conceptoId && gastoData.conceptoNombre 
-                ? { id: gastoData.conceptoId, nombre: gastoData.conceptoNombre } 
-                : null;
-            
-            this.selectedCategoria = gastoData.categoriaId && gastoData.categoriaNombre 
-                ? { id: gastoData.categoriaId, nombre: gastoData.categoriaNombre } 
-                : null;
-            
-            this.selectedProveedor = gastoData.proveedorId && gastoData.proveedorNombre 
-                ? { id: gastoData.proveedorId, nombre: gastoData.proveedorNombre } 
-                : null;
-            
-            this.selectedPersona = gastoData.personaId && gastoData.personaNombre 
-                ? { id: gastoData.personaId, nombre: gastoData.personaNombre } 
-                : null;
+            this.selectedConcepto = gastoData.conceptoId && gastoData.conceptoNombre ? { id: gastoData.conceptoId, nombre: gastoData.conceptoNombre } : null;
+
+            this.selectedCategoria = gastoData.categoriaId && gastoData.categoriaNombre ? { id: gastoData.categoriaId, nombre: gastoData.categoriaNombre } : null;
+
+            this.selectedProveedor = gastoData.proveedorId && gastoData.proveedorNombre ? { id: gastoData.proveedorId, nombre: gastoData.proveedorNombre } : null;
+
+            this.selectedPersona = gastoData.personaId && gastoData.personaNombre ? { id: gastoData.personaId, nombre: gastoData.personaNombre } : null;
         } else {
             // Modo creación
             this.isEditMode.set(false);

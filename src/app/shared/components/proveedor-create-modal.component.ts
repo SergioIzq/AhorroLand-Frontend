@@ -4,21 +4,38 @@ import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageService } from 'primeng/api';
-import { CategoriaService, CategoriaItem } from '@/core/services/api/categoria.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ProveedorService, ProveedorItem } from '@/core/services/api/proveedor.service';
 
 @Component({
-    selector: 'app-categoria-create-modal',
+    selector: 'app-proveedor-create-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule, DialogModule, ButtonModule, InputTextModule],
+    imports: [CommonModule, FormsModule, DialogModule, ButtonModule, InputTextModule, ConfirmDialogModule],
+    providers: [ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <p-dialog [(visible)]="isVisible" [style]="{ width: '450px' }" header="Crear Nueva Categoría" [modal]="true" [contentStyle]="{ padding: '2rem' }" (onHide)="onCancel()" styleClass="p-fluid">
+        <p-dialog 
+            [(visible)]="isVisible" 
+            [style]="{ width: '450px' }" 
+            header="Crear Nuevo Proveedor" 
+            [modal]="true" 
+            [contentStyle]="{ padding: '2rem' }" 
+            (onHide)="onCancel()" 
+            styleClass="p-fluid">
             <ng-template #content>
                 <div class="flex flex-col gap-4">
                     <div>
-                        <label for="nombre" class="block font-bold mb-3">Nombre de la Categoría *</label>
-                        <input type="text" pInputText id="nombre" [(ngModel)]="nombre" required autofocus placeholder="Ej: Salario" fluid />
+                        <label for="nombre" class="block font-bold mb-3">Nombre del Proveedor *</label>
+                        <input 
+                            type="text" 
+                            pInputText 
+                            id="nombre" 
+                            [(ngModel)]="nombre" 
+                            required 
+                            autofocus 
+                            placeholder="Ej: Mercadona" 
+                            fluid />
                         @if (submitted() && !nombre.trim()) {
                             <small class="text-red-500"> El nombre es requerido. </small>
                         }
@@ -35,17 +52,18 @@ import { CategoriaService, CategoriaItem } from '@/core/services/api/categoria.s
                 <p-button label="Crear" icon="pi pi-check" (click)="onCreate()" [loading]="loading()" />
             </ng-template>
         </p-dialog>
+        <p-confirmdialog />
     `
 })
-export class CategoriaCreateModalComponent {
+export class ProveedorCreateModalComponent {
     private messageService = inject(MessageService);
-    private categoriaService = inject(CategoriaService);
+    private proveedorService = inject(ProveedorService);
+    private confirmationService = inject(ConfirmationService);
 
     // Inputs/Outputs
     visible = input<boolean>(false);
-    tipo = input<'GASTO' | 'INGRESO'>('INGRESO');
     visibleChange = output<boolean>();
-    created = output<CategoriaItem>();
+    created = output<ProveedorItem>();
     cancel = output<void>();
 
     // Estado del formulario
@@ -79,23 +97,36 @@ export class CategoriaCreateModalComponent {
             return;
         }
 
+        this.confirmationService.confirm({
+            message: `¿Está seguro que desea crear el proveedor "${this.nombre.trim()}"?`,
+            header: 'Confirmar Creación',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí, crear',
+            rejectLabel: 'Cancelar',
+            accept: () => {
+                this.confirmedCreate();
+            }
+        });
+    }
+
+    private confirmedCreate() {
         this.loading.set(true);
 
-        this.categoriaService.create(this.nombre.trim()).subscribe({
-            next: (nuevaCategoria) => {
+        this.proveedorService.create(this.nombre.trim()).subscribe({
+            next: (nuevoProveedor) => {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
-                    detail: `Categoría "${nuevaCategoria.nombre}" creada correctamente`,
+                    detail: `Proveedor "${nuevoProveedor.nombre}" creado correctamente`,
                     life: 3000
                 });
 
-                this.created.emit(nuevaCategoria);
+                this.created.emit(nuevoProveedor);
                 this.closeModal();
             },
             error: (error) => {
-                console.error('Error creando categoría:', error);
-                this.errorMessage.set(error.error?.message || 'Error al crear la categoría');
+                console.error('Error creando proveedor:', error);
+                this.errorMessage.set(error.error?.message || 'Error al crear el proveedor');
                 this.loading.set(false);
             }
         });

@@ -17,7 +17,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { IngresosStore } from '../stores/ingresos.store';
 import { Ingreso } from '@/core/models';
 import { IngresoFormModalComponent } from '../components/ingreso-form-modal.component';
-import { BasePageComponent } from '@/shared/components';
+import { BasePageComponent } from '@/shared/components/base-page.component';
 
 @Component({
     selector: 'app-ingresos-list-page',
@@ -221,7 +221,7 @@ import { BasePageComponent } from '@/shared/components';
     `
 })
 export class IngresosListPage extends BasePageComponent implements OnDestroy {
-    ingresosStore = inject(IngresosStore);
+    ingresosStore: InstanceType<typeof IngresosStore> = inject(IngresosStore);
 
     @ViewChild('dt') dt!: Table;
 
@@ -376,7 +376,7 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
 
         // Crear CSV manualmente con BOM para UTF-8
         const headers = ['Concepto', 'Categoría', 'Cliente', 'Fecha', 'Importe', 'Descripción'];
-        const csvData = ingresos.map(i => [
+        const csvData = ingresos.map((i: Ingreso) => [
             i.conceptoNombre,
             i.categoriaNombre || '',
             i.clienteNombre || '',
@@ -388,8 +388,8 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         // Agregar BOM (Byte Order Mark) para UTF-8
         let csv = '\uFEFF';
         csv += headers.join(',') + '\n';
-        csvData.forEach(row => {
-            csv += row.map(field => `"${field}"`).join(',') + '\n';
+        csvData.forEach((row: any[]) => {
+            csv += row.map((field: any) => `"${field}"`).join(',') + '\n';
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

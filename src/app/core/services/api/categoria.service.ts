@@ -21,9 +21,9 @@ export class CategoriaService {
      * Búsqueda ligera de categorías por nombre
      * Solo devuelve {id, nombre} para rendimiento óptimo
      */
-    search(searchTerm: string, limit: number = 10): Observable<CategoriaItem[]> {
+    search(search: string, limit: number = 10): Observable<CategoriaItem[]> {
         let params = new HttpParams()
-            .set('searchTerm', searchTerm)
+            .set('search', search)
             .set('limit', limit.toString());
 
         return this.http.get<ApiResponse<ListResponse<CategoriaItem>>>(`${this.apiUrl}/search`, { params })

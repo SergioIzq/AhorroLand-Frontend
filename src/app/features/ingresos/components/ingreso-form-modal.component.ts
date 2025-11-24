@@ -14,10 +14,12 @@ import { ConceptoService, ConceptoItem } from '@/core/services/api/concepto.serv
 import { CategoriaService, CategoriaItem } from '@/core/services/api/categoria.service';
 import { ClienteService, ClienteItem } from '@/core/services/api/cliente.service';
 import { PersonaService, PersonaItem } from '@/core/services/api/persona.service';
-import { ConceptoCreateModalComponent } from './concepto-create-modal.component';
-import { CategoriaCreateModalComponent } from './categoria-create-modal.component';
-import { ClienteCreateModalComponent } from './cliente-create-modal.component';
-import { PersonaCreateModalComponent } from './persona-create-modal.component';
+import { 
+    ConceptoCreateModalComponent,
+    CategoriaCreateModalComponent,
+    ClienteCreateModalComponent,
+    PersonaCreateModalComponent
+} from '@/shared/components';
 
 interface CatalogItem {
     id: string;
@@ -210,7 +212,6 @@ interface IngresoFormData extends Omit<Partial<Ingreso>, 'fecha'> {
         <!-- Modales inline para creación rápida -->
         <app-concepto-create-modal
             [visible]="showConceptoCreateModal"
-            [tipo]="'INGRESO'"
             (visibleChange)="showConceptoCreateModal = $event"
             (created)="onConceptoCreated($event)"
             (cancel)="showConceptoCreateModal = false"
@@ -218,7 +219,6 @@ interface IngresoFormData extends Omit<Partial<Ingreso>, 'fecha'> {
 
         <app-categoria-create-modal
             [visible]="showCategoriaCreateModal"
-            [tipo]="'INGRESO'"
             (visibleChange)="showCategoriaCreateModal = $event"
             (created)="onCategoriaCreated($event)"
             (cancel)="showCategoriaCreateModal = false"

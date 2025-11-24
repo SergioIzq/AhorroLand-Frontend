@@ -4,21 +4,38 @@ import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ClienteService, ClienteItem } from '@/core/services/api/cliente.service';
 
 @Component({
     selector: 'app-cliente-create-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule, DialogModule, ButtonModule, InputTextModule],
+    imports: [CommonModule, FormsModule, DialogModule, ButtonModule, InputTextModule, ConfirmDialogModule],
+    providers: [ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <p-dialog [(visible)]="isVisible" [style]="{ width: '450px' }" header="Crear Nuevo Cliente" [modal]="true" [contentStyle]="{ padding: '2rem' }" (onHide)="onCancel()" styleClass="p-fluid">
+        <p-dialog 
+            [(visible)]="isVisible" 
+            [style]="{ width: '450px' }" 
+            header="Crear Nuevo Cliente" 
+            [modal]="true" 
+            [contentStyle]="{ padding: '2rem' }" 
+            (onHide)="onCancel()" 
+            styleClass="p-fluid">
             <ng-template #content>
                 <div class="flex flex-col gap-4">
                     <div>
                         <label for="nombre" class="block font-bold mb-3">Nombre del Cliente *</label>
-                        <input type="text" pInputText id="nombre" [(ngModel)]="nombre" required autofocus placeholder="Ej: Empresa XYZ" fluid />
+                        <input 
+                            type="text" 
+                            pInputText 
+                            id="nombre" 
+                            [(ngModel)]="nombre" 
+                            required 
+                            autofocus 
+                            placeholder="Ej: Empresa XYZ" 
+                            fluid />
                         @if (submitted() && !nombre.trim()) {
                             <small class="text-red-500"> El nombre es requerido. </small>
                         }
@@ -35,11 +52,13 @@ import { ClienteService, ClienteItem } from '@/core/services/api/cliente.service
                 <p-button label="Crear" icon="pi pi-check" (click)="onCreate()" [loading]="loading()" />
             </ng-template>
         </p-dialog>
+        <p-confirmdialog />
     `
 })
 export class ClienteCreateModalComponent {
     private messageService = inject(MessageService);
     private clienteService = inject(ClienteService);
+    private confirmationService = inject(ConfirmationService);
 
     // Inputs/Outputs
     visible = input<boolean>(false);
@@ -78,6 +97,19 @@ export class ClienteCreateModalComponent {
             return;
         }
 
+        this.confirmationService.confirm({
+            message: `¿Está seguro que desea crear el cliente "${this.nombre.trim()}"?`,
+            header: 'Confirmar Creación',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí, crear',
+            rejectLabel: 'Cancelar',
+            accept: () => {
+                this.confirmedCreate();
+            }
+        });
+    }
+
+    private confirmedCreate() {
         this.loading.set(true);
 
         this.clienteService.create(this.nombre.trim()).subscribe({

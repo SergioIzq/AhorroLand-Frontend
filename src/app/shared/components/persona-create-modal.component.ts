@@ -1,16 +1,18 @@
-import { Component, input, output, signal, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, input, output, signal, ChangeDetectionStrategy, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { PersonaService, PersonaItem } from '@/core/services/api/persona.service';
 
 @Component({
     selector: 'app-persona-create-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule, DialogModule, ButtonModule, InputTextModule],
+    imports: [CommonModule, FormsModule, DialogModule, ButtonModule, InputTextModule, ConfirmDialogModule],
+    providers: [ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <p-dialog
@@ -18,13 +20,14 @@ import { PersonaService, PersonaItem } from '@/core/services/api/persona.service
             [style]="{ width: '450px' }"
             header="Crear Nueva Persona"
             [modal]="true"
+            [contentStyle]="{ padding: '2rem' }"
             styleClass="p-fluid"
             (onHide)="onCancel()"
         >
             <ng-template #content>
                 <div class="flex flex-col gap-4">
                     <div>
-                        <label for="nombre" class="block font-bold mb-2">Nombre de Persona *</label>
+                        <label for="nombre" class="block font-bold mb-3">Nombre de Persona *</label>
                         <input
                             pInputText
                             id="nombre"
@@ -42,21 +45,22 @@ import { PersonaService, PersonaItem } from '@/core/services/api/persona.service
             </ng-template>
 
             <ng-template #footer>
-                <p-button label="Cancelar" icon="pi pi-times" text (click)="onCancel()" />
+                <p-button label="Cancelar" icon="pi pi-times" text (click)="onCancel()" [disabled]="isCreating()" />
                 <p-button
                     label="Crear"
                     icon="pi pi-check"
                     (click)="onCreate()"
-                    [disabled]="isCreating()"
                     [loading]="isCreating()"
                 />
             </ng-template>
         </p-dialog>
+        <p-confirmdialog />
     `,
 })
 export class PersonaCreateModalComponent {
     private personaService = inject(PersonaService);
     private messageService = inject(MessageService);
+    private confirmationService = inject(ConfirmationService);
 
     // Inputs/Outputs
     visible = input<boolean>(false);
@@ -72,13 +76,12 @@ export class PersonaCreateModalComponent {
 
     constructor() {
         // Sincronizar visible con isVisible interno
-        const visibleEffect = () => {
+        effect(() => {
             this.isVisible = this.visible();
             if (this.isVisible) {
                 this.resetForm();
             }
-        };
-        visibleEffect();
+        });
     }
 
     onCreate() {
@@ -88,6 +91,19 @@ export class PersonaCreateModalComponent {
             return;
         }
 
+        this.confirmationService.confirm({
+            message: `¿Está seguro que desea crear la persona "${this.nombre.trim()}"?`,
+            header: 'Confirmar Creación',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Sí, crear',
+            rejectLabel: 'Cancelar',
+            accept: () => {
+                this.confirmedCreate();
+            }
+        });
+    }
+
+    private confirmedCreate() {
         this.isCreating.set(true);
 
         this.personaService.create(this.nombre.trim()).subscribe({
@@ -96,6 +112,7 @@ export class PersonaCreateModalComponent {
                     severity: 'success',
                     summary: 'Éxito',
                     detail: `Persona "${nuevaPersona.nombre}" creada correctamente`,
+                    life: 3000
                 });
                 this.created.emit(nuevaPersona);
                 this.closeModal();
@@ -106,6 +123,7 @@ export class PersonaCreateModalComponent {
                     severity: 'error',
                     summary: 'Error',
                     detail: 'No se pudo crear la persona. Intente nuevamente.',
+                    life: 3000
                 });
                 this.isCreating.set(false);
             },

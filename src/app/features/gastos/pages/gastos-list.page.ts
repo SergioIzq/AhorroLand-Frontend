@@ -17,7 +17,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { GastosStore } from '../stores/gastos.store';
 import { Gasto } from '@/core/models';
 import { GastoFormModalComponent } from '../components/gasto-form-modal.component';
-import { BasePageComponent } from '@/shared/components';
+import { BasePageComponent } from '';
 
 @Component({
     selector: 'app-gastos-list-page',
