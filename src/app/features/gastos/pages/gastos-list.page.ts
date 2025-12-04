@@ -305,7 +305,6 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
 
     onGlobalFilter(table: Table, event: Event) {
         const searchValue = (event.target as HTMLInputElement).value;
-        console.log('Input de búsqueda:', searchValue);
         
         // Usar Subject para aplicar debounce (esperar 500ms después de dejar de escribir)
         this.searchSubject.next(searchValue);

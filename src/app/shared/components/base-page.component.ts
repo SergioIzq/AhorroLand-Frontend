@@ -14,7 +14,7 @@ import { Observable, lastValueFrom } from 'rxjs';
 })
 export abstract class BasePageComponent {
     protected messageService = inject(MessageService);
-    protected confirmationService = inject(ConfirmationService);
+    protected confirmationService = inject(ConfirmationService, { optional: true });
 
     /**
      * Ejecuta una operación asíncrona mostrando toast de éxito o error según el resultado
@@ -30,9 +30,7 @@ export abstract class BasePageComponent {
         } = {}
     ): Promise<T | undefined> {
         try {
-            const result = operation instanceof Observable 
-                ? await lastValueFrom(operation)
-                : await operation;
+            const result = operation instanceof Observable ? await lastValueFrom(operation) : await operation;
 
             if (options.successMessage) {
                 this.showSuccess(options.successMessage);
@@ -45,7 +43,7 @@ export abstract class BasePageComponent {
             return result;
         } catch (error) {
             console.error('Error en operación:', error);
-            
+
             const errorMsg = options.errorMessage || this.extractErrorMessage(error);
             this.showError(errorMsg);
 
@@ -71,7 +69,7 @@ export abstract class BasePageComponent {
             successMessage?: string;
         } = {}
     ): void {
-        this.confirmationService.confirm({
+        this.confirmationService?.confirm({
             message,
             header: options.header || 'Confirmar',
             icon: options.icon || 'pi pi-exclamation-triangle',
@@ -80,7 +78,7 @@ export abstract class BasePageComponent {
             acceptButtonStyleClass: 'p-button-danger',
             accept: async () => {
                 const result = action();
-                
+
                 if (result instanceof Promise) {
                     await this.executeWithFeedback(result, {
                         successMessage: options.successMessage
