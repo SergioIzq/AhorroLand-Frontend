@@ -27,7 +27,7 @@ import { AuthWrapperComponent } from '../components/auth-wrapper.component';
     ],
     template: `
         <app-auth-wrapper 
-            title="Crear Cuenta" 
+            title="Crear cuenta" 
             subtitle="Únete a AhorroLand hoy mismo">
             
             @if (showSuccessView()) {
@@ -48,6 +48,35 @@ import { AuthWrapperComponent } from '../components/auth-wrapper.component';
                 <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="w-full md:w-120">
                     
                     <div class="flex flex-col gap-5">
+                        <div>
+                            <label for="nombre" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Nombre</label>
+                            <input 
+                                pInputText 
+                                id="nombre" 
+                                formControlName="nombre"
+                                type="text" 
+                                placeholder="Tu nombre" 
+                                class="w-full" 
+                                [ngClass]="{'ng-invalid ng-dirty': registerForm.get('nombre')?.touched && registerForm.get('nombre')?.invalid}" />
+                            @if (registerForm.get('nombre')?.touched && registerForm.get('nombre')?.hasError('required')) {
+                                <small class="text-red-500 mt-1 block">El nombre es obligatorio.</small>
+                            }
+                            @if (registerForm.get('nombre')?.touched && registerForm.get('nombre')?.hasError('minlength')) {
+                                <small class="text-red-500 mt-1 block">El nombre debe tener al menos 2 caracteres.</small>
+                            }
+                        </div>
+
+                        <div>
+                            <label for="apellidos" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Apellidos <span class="text-muted-color text-sm">(opcional)</span></label>
+                            <input 
+                                pInputText 
+                                id="apellidos" 
+                                formControlName="apellidos"
+                                type="text" 
+                                placeholder="Tus apellidos" 
+                                class="w-full" />
+                        </div>
+
                         <div>
                             <label for="email" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Email</label>
                             <input 
@@ -136,6 +165,8 @@ export class RegisterPage {
     registerForm = this.fb.group({
         email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(6)]],
+        nombre: ['', [Validators.required, Validators.minLength(2)]],
+        apellidos: [''],
         termsAccepted: [false, [Validators.requiredTrue]]
     });
 
@@ -179,10 +210,12 @@ export class RegisterPage {
         }
         
         this.isSubmitting = true;
-        const { email, password } = this.registerForm.value;
+        const { email, password, nombre, apellidos } = this.registerForm.value;
         this.authStore.register({ 
             correo: email!, 
-            contrasena: password! 
+            contrasena: password!,
+            nombre: nombre!,
+            apellidos: apellidos || undefined
         });
     }
 }

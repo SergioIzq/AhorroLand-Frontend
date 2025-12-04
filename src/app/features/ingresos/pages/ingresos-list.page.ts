@@ -299,22 +299,12 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
             this.sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
         }
         
-        console.log('loadIngresosLazy llamado - event:', event);
-        console.log('Calculado:', { 
-            page: this.pageNumber, 
-            pageSize: this.pageSize,
-            sortColumn: this.sortColumn,
-            sortOrder: this.sortOrder,
-            searchTerm: this.searchTerm
-        });
-        
         // Cargar ingresos
         this.reloadIngresos();
     }
 
     onGlobalFilter(table: Table, event: Event) {
         const searchValue = (event.target as HTMLInputElement).value;
-        console.log('Input de búsqueda:', searchValue);
         
         // Usar Subject para aplicar debounce (esperar 500ms después de dejar de escribir)
         this.searchSubject.next(searchValue);

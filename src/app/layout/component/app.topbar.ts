@@ -65,7 +65,7 @@ import { AuthStore } from '../../core/stores/auth.store';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action" disabled>
+                    <button type="button" class="layout-topbar-action" routerLink="/auth/my-profile">
                         <i class="pi pi-user"></i>
                         <span>{{ authStore.userName() }}</span>
                     </button>

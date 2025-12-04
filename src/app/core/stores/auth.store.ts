@@ -27,27 +27,46 @@ export const AuthStore = signalStore(
 
     withComputed((store) => ({
         isLoggedIn: computed(() => store.isAuthenticated() && store.user() !== null),
+
         userName: computed(() => {
             const user = store.user();
-            console.log(user)
-            return user ? `${user.nombre} ${user.apellido || ''}`.trim() : '';
+            // Usamos operador de coalescencia nula (??) para strings vacíos
+            return user ? `${user.nombre} ${user.apellidos ?? ''}`.trim() : '';
         }),
+
         userInitials: computed(() => {
             const user = store.user();
             if (!user) return '';
-            const firstInitial = user.nombre?.charAt(0) || '';
-            const lastInitial = user.apellido?.charAt(0) || '';
-            return `${firstInitial}${lastInitial}`.toUpperCase();
+            const first = user.nombre?.charAt(0) || '';
+            const last = user.apellidos?.charAt(0) || '';
+            return `${first}${last}`.toUpperCase();
         })
     })),
 
     withMethods((store, authService = inject(AuthService)) => ({
+        // --- Helper privado para reutilizar lógica try-catch ---
+        async _executeRequest<T>(request$: Observable<T>, errorMessage: string): Promise<T> {
+            patchState(store, { loading: true, error: null });
+            try {
+                const result = await firstValueFrom(request$);
+                patchState(store, { loading: false });
+                return result;
+            } catch (err: any) {
+                // Extraer mensaje del backend o usar fallback
+                const errorMsg = (err.error as ErrorResponse)?.detail || errorMessage;
+                patchState(store, { loading: false, error: errorMsg });
+                throw err;
+            }
+        },
+
+        // --- Acciones Públicas ---
+
         async login(credentials: LoginCredentials): Promise<void> {
             patchState(store, { loading: true, error: null });
-
             try {
+                // El servicio login ya devuelve el Usuario completo gracias al switchMap interno
                 const user = await firstValueFrom(authService.login(credentials));
-                
+
                 patchState(store, {
                     user,
                     isAuthenticated: true,
@@ -56,56 +75,40 @@ export const AuthStore = signalStore(
                 });
             } catch (err: any) {
                 const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al iniciar sesión';
-
-                patchState(store, {
-                    loading: false,
-                    error: errorMsg
-                });
-
+                patchState(store, { loading: false, error: errorMsg });
                 throw err;
             }
         },
 
-        async register(payload: { correo: string; contrasena: string }): Promise<void> {
-            return this.executeAuthAction(
-                () => authService.register(payload),
-                'Error al registrar usuario'
-            );
+        async register(payload: { correo: string; contrasena: string; nombre: string; apellidos?: string }): Promise<void> {
+            // Usamos _executeRequest porque no necesitamos actualizar el store con el resultado
+            await this._executeRequest(authService.register(payload), 'Error al registrar usuario');
         },
 
         async confirmEmail(token: string): Promise<void> {
-            return this.executeAuthAction(
-                () => authService.confirmEmail(token),
-                'Error al confirmar correo'
-            );
+            await this._executeRequest(authService.confirmEmail(token), 'Error al confirmar correo');
         },
 
         async forgotPassword(email: string): Promise<void> {
-            return this.executeAuthAction(
-                () => authService.forgotPassword(email),
-                'No se pudo enviar el correo'
-            );
+            await this._executeRequest(authService.forgotPassword(email), 'No se pudo enviar el correo de recuperación');
         },
 
         async resetPassword(payload: { email: string; token: string; newPassword: string }): Promise<void> {
-            return this.executeAuthAction(
-                () => authService.resetPassword(payload.email, payload.token, payload.newPassword),
-                'No se pudo restablecer la contraseña'
-            );
+            await this._executeRequest(authService.resetPassword(payload.email, payload.token, payload.newPassword), 'No se pudo restablecer la contraseña');
         },
 
         async resendConfirmationEmail(email: string): Promise<void> {
-            return this.executeAuthAction(
-                () => authService.resendConfirmation(email),
-                'Error al reenviar correo'
-            );
+            await this._executeRequest(authService.resendConfirmation(email), 'Error al reenviar correo de confirmación');
         },
 
         async logout(): Promise<void> {
             patchState(store, { loading: true });
             try {
                 await firstValueFrom(authService.logout());
+            } catch (err) {
+                console.warn('Error en logout backend, limpiando localmente', err);
             } finally {
+                // Limpieza incondicional
                 patchState(store, {
                     user: null,
                     isAuthenticated: false,
@@ -115,42 +118,78 @@ export const AuthStore = signalStore(
             }
         },
 
+        async updateProfile(data: { nombre: string; apellidos: string | null }): Promise<void> {
+            patchState(store, { loading: true, error: null });
+
+            try {
+                // 1. Llamada al Backend
+                await firstValueFrom(authService.updateProfile(data));
+
+                // 2. Si tiene éxito, actualizamos el estado local (Optimistic update confirmado)
+                const currentUser = store.user();
+
+                if (currentUser) {
+                    // Creamos el objeto usuario actualizado
+                    const updatedUser = {
+                        ...currentUser,
+                        nombre: data.nombre,
+                        // Mapeamos 'apellido' (frontend) a 'apellidos' (modelo Usuario si fuera necesario)
+                        // Asegúrate de que tu modelo Usuario usa 'apellidos' o 'apellido' consistentemente.
+                        // Basado en tu código anterior, parece que usas 'apellidos' en el modelo Usuario.
+                        apellidos: data.apellidos ?? null
+                    };
+
+                    // 3. Guardamos en LocalStorage para persistencia (F5)
+                    authService.setUser(updatedUser);
+
+                    // 4. Actualizamos el Signal Store (UI reactiva)
+                    patchState(store, {
+                        user: updatedUser,
+                        loading: false
+                    });
+                }
+            } catch (err: any) {
+                const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al actualizar el perfil';
+                patchState(store, { loading: false, error: errorMsg });
+                throw err;
+            }
+        },
+
+        // Métodos síncronos para actualizaciones manuales
         setUser(user: Usuario | null) {
-            patchState(store, { user, isAuthenticated: user !== null });
+            patchState(store, { user, isAuthenticated: !!user });
         },
 
         clearError() {
             patchState(store, { error: null });
-        },
-
-        async executeAuthAction(action: () => Observable<any>, errorMessage: string): Promise<void> {
-            patchState(store, { loading: true, error: null });
-            try {
-                await firstValueFrom(action());
-                patchState(store, { loading: false });
-            } catch (err: any) {
-                const errorMsg = (err.error as ErrorResponse)?.detail || errorMessage;
-                patchState(store, { loading: false, error: errorMsg });
-                throw err;
-            }
         }
     })),
 
     withHooks({
         onInit(store, authService = inject(AuthService)) {
+            // 1. Carga síncrona inicial (para que el Guard pase rápido)
             const user = authService.getUserFromStorage();
 
             if (user) {
+                // Estado optimista: "Estamos logueados"
                 patchState(store, { user, isAuthenticated: true, initialized: true });
 
+                // 2. Validación asíncrona (Background check)
                 authService.fetchCurrentUser().subscribe({
-                    next: (freshUser) => patchState(store, { user: freshUser, isAuthenticated: true }),
+                    next: (freshUser) => {
+                        // Si el token es válido, actualizamos con datos frescos
+                        patchState(store, { user: freshUser, isAuthenticated: true });
+                    },
                     error: () => {
-                        patchState(store, { user: null, isAuthenticated: false });
+                        // Si el token expiró, cerramos sesión automáticamente
+                        console.warn('Sesión expirada detectada al inicio');
                         authService.clearUser();
+                        patchState(store, { user: null, isAuthenticated: false });
+                        // Opcional: Redirigir al login si estás en ruta protegida (lo hará el guard al navegar)
                     }
                 });
             } else {
+                // No hay usuario guardado, inicialización terminada
                 patchState(store, { initialized: true });
             }
         }

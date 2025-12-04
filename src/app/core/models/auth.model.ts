@@ -2,9 +2,8 @@ export interface Usuario {
     id: string;
     email: string;
     nombre: string;
-    apellido?: string;
+    apellidos?: string | null;
     rol?: string;
-    avatar?: string;
 }
 
 export interface LoginCredentials {

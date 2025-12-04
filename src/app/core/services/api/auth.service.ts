@@ -15,39 +15,49 @@ export class AuthService {
     private readonly USER_KEY = 'user_data';
 
     login(credentials: LoginCredentials): Observable<Usuario> {
-        return this.http
-            .post<Result<any>>(`${this.apiUrl}/login?useCookie=true`, credentials)
-            .pipe(switchMap(() => this.fetchCurrentUser()));
+        return this.http.post<Result<any>>(`${this.apiUrl}/login?useCookie=true`, credentials).pipe(switchMap(() => this.fetchCurrentUser()));
     }
 
-    register(payload: { correo: string; contrasena: string }): Observable<string> {
-        return this.http
-            .post<Result<string>>(`${this.apiUrl}/register`, payload)
-            .pipe(map((res) => res.value));
+    register(payload: { correo: string; contrasena: string; nombre: string; apellidos?: string }): Observable<string> {
+        return this.http.post<Result<string>>(`${this.apiUrl}/register`, payload).pipe(map((res) => res.value));
     }
 
     confirmEmail(token: string): Observable<string> {
-        return this.http
-            .get<Result<string>>(`${this.apiUrl}/confirmar-correo?token=${token}`)
-            .pipe(map((res) => res.value));
+        return this.http.get<Result<string>>(`${this.apiUrl}/confirmar-correo?token=${token}`).pipe(map((res) => res.value));
     }
 
     resendConfirmation(email: string): Observable<void> {
-        return this.http
-            .post<Result<void>>(`${this.apiUrl}/resend-confirmation`, { correo: email })
-            .pipe(map(() => undefined));
+        return this.http.post<Result<void>>(`${this.apiUrl}/resend-confirmation`, { correo: email }).pipe(map(() => undefined));
     }
 
     forgotPassword(email: string): Observable<string> {
         return this.http
-            .post<Result<string>>(`${this.apiUrl}/forgot-password`, { email })
-            .pipe(map((res) => res.value));
+            .post<Result<string>>(`${this.apiUrl}/forgot-password`, { email }, { observe: 'response' })
+            .pipe(
+                map((response) => {
+                    // Si es 204, no hay body
+                    if (response.status === 204) {
+                        return 'Correo de recuperación enviado correctamente';
+                    }
+                    // Si hay body, extraer el valor
+                    return response.body?.value || 'Correo de recuperación enviado correctamente';
+                })
+            );
     }
 
     resetPassword(email: string, token: string, newPassword: string): Observable<string> {
         return this.http
-            .post<Result<string>>(`${this.apiUrl}/reset-password`, { email, token, newPassword })
-            .pipe(map((res) => res.value));
+            .post<Result<string>>(`${this.apiUrl}/reset-password`, { email, token, newPassword }, { observe: 'response' })
+            .pipe(
+                map((response) => {
+                    // Si es 204, no hay body
+                    if (response.status === 204) {
+                        return 'Contraseña restablecida correctamente';
+                    }
+                    // Si hay body, extraer el valor
+                    return response.body?.value || 'Contraseña restablecida correctamente';
+                })
+            );
     }
 
     logout(): Observable<void> {
@@ -62,30 +72,38 @@ export class AuthService {
     }
 
     fetchCurrentUser(): Observable<Usuario> {
-        return this.http.get<Result<any>>(`${this.apiUrl}/me`).pipe(
-            map((res) => {
-                if (!res.isSuccess || !res.value) {
-                    throw new Error('Respuesta inválida del servidor');
+        const url = `${this.apiUrl}/me?_t=${Date.now()}`;
+        return this.http
+            .get<Result<any>>(url, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    Pragma: 'no-cache',
+                    Expires: '0'
                 }
-                
-                const data = res.value;
-                const user: Usuario = {
-                    id: data.id || data.Id,
-                    email: data.email || data.Email || data.correo || data.Correo,
-                    nombre: data.nombre || data.Nombre,
-                    apellido: data.apellido || data.Apellido,
-                    rol: data.rol || data.Rol,
-                    avatar: data.avatar || data.Avatar
-                };
-                
-                this.setUser(user);
-                return user;
-            }),
-            catchError((err) => {
-                this.clearUser();
-                return throwError(() => err);
             })
-        );
+            .pipe(
+                map((res) => {
+                    if (!res.isSuccess || !res.value) {
+                        throw new Error('Respuesta inválida del servidor');
+                    }
+
+                    const data = res.value;
+                    const user: Usuario = {
+                        id: data.id || data.Id,
+                        email: data.email || data.Email || data.correo || data.Correo,
+                        nombre: data.nombre || data.Nombre,
+                        apellidos: data.apellidos || data.Apellidos,
+                        rol: data.rol || data.Rol
+                    };
+
+                    this.setUser(user);
+                    return user;
+                }),
+                catchError((err) => {
+                    this.clearUser();
+                    return throwError(() => err);
+                })
+            );
     }
 
     setUser(user: Usuario): void {
@@ -108,5 +126,9 @@ export class AuthService {
             localStorage.removeItem(this.USER_KEY);
             return null;
         }
+    }
+
+    updateProfile(data: { nombre: string; apellido?: string }): Observable<void> {
+        return this.http.put<Result<void>>(`${this.apiUrl}/profile`, data).pipe(map(() => undefined));
     }
 }

@@ -8,8 +8,8 @@ export const appRoutes: Routes = [
         component: AppLayout,
         canActivate: [authGuard],
         children: [
-            { 
-                path: '', 
+            {
+                path: '',
                 loadChildren: () => import('./app/features/dashboard/dashboard.routes')
             },
             {
@@ -19,19 +19,23 @@ export const appRoutes: Routes = [
             {
                 path: 'ingresos',
                 loadChildren: () => import('./app/features/ingresos/ingresos.routes')
+            },
+            {
+                path: 'auth/my-profile',
+                loadComponent: () => import('./app/features/auth/pages/my-profile.page').then((m) => m.MyProfilePage)
             }
         ]
     },
-    { 
-        path: 'auth', 
+    {
+        path: 'auth',
         loadChildren: () => import('./app/features/auth/auth.routes')
     },
-    { 
-        path: 'notfound', 
-        loadComponent: () => import('./app/shared/pages/notfound.page').then(m => m.NotFoundPage)
+    {
+        path: 'notfound',
+        loadComponent: () => import('./app/shared/pages/notfound.page').then((m) => m.NotFoundPage)
     },
-    { 
-        path: '**', 
-        redirectTo: '/notfound' 
+    {
+        path: '**',
+        redirectTo: '/notfound'
     }
 ];

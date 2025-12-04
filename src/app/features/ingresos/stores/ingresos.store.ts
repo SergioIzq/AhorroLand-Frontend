@@ -129,14 +129,12 @@ export const IngresosStore = signalStore(
         }>(
             pipe(
                 tap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) => {
-                    console.log('[STORE] Cargando:', { page, pageSize, searchTerm, sortColumn, sortOrder });
                     patchState(store, { loading: true, error: null });
                 }),
                 switchMap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) =>
                     ingresoService.getIngresos(page, pageSize, searchTerm, sortColumn, sortOrder).pipe(
                         tapResponse({
                             next: (response: any) => {
-                                console.log('[STORE] Respuesta recibida:', response);
                                 patchState(store, {
                                     ingresos: response.items,
                                     totalRecords: response.totalCount,

@@ -146,14 +146,12 @@ export const GastosStore = signalStore(
         }>(
             pipe(
                 tap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) => {
-                    console.log('[STORE] Cargando:', { page, pageSize, searchTerm, sortColumn, sortOrder });
                     patchState(store, { loading: true, error: null });
                 }),
                 switchMap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) =>
                     gastoService.getGastos(page, pageSize, searchTerm, sortColumn, sortOrder).pipe(
                         tapResponse({
                             next: (response) => {
-                                console.log('[STORE] Respuesta recibida:', response);
                                 patchState(store, {
                                     gastos: response.items,
                                     totalRecords: response.totalCount,

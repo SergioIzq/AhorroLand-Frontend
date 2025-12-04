@@ -21,14 +21,14 @@ import { CommonModule } from '@angular/common';
     ],
     template: `
         <app-auth-wrapper 
-            [title]="emailSent() ? '¡Correo Enviado!' : 'Recuperar Cuenta'" 
+            [title]="emailSent() ? '¡Correo Enviado!' : 'Recuperar cuenta'" 
             [subtitle]="emailSent() ? 'Revisa tu bandeja de entrada' : 'Ingresa tu correo para buscar tu cuenta'">
 
             @if (!emailSent()) {
                 <form [formGroup]="form" (ngSubmit)="onSubmit()" class="w-full md:w-120 animate-fadein">
                     
                     <div class="flex flex-col gap-2 mb-6">
-                        <label for="email" class="font-medium text-surface-900 dark:text-surface-0">Correo Electrónico</label>
+                        <label for="email" class="font-medium text-surface-900 dark:text-surface-0">Correo electrónico</label>
                         <input 
                             pInputText 
                             id="email" 
