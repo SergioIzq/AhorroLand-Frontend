@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-import { ApiResponse, ListResponse } from '@/core/models/common.model';
+import { ListData, Result } from '@/core/models/common.model';
 
 export interface ProveedorItem {
     id: string;
@@ -26,8 +26,8 @@ export class ProveedorService {
             .set('searchTerm', searchTerm)
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<ProveedorItem>>>(`${this.apiUrl}/search`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<ProveedorItem>>>(`${this.apiUrl}/search`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
@@ -37,15 +37,15 @@ export class ProveedorService {
         let params = new HttpParams()
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<ProveedorItem>>>(`${this.apiUrl}/recent`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<ProveedorItem>>>(`${this.apiUrl}/recent`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
      * Crear un nuevo proveedor
      */
     create(nombre: string): Observable<ProveedorItem> {
-        return this.http.post<ApiResponse<ProveedorItem>>(this.apiUrl, { nombre })
-            .pipe(map(response => response.data));
+        return this.http.post<Result<ProveedorItem>>(this.apiUrl, { nombre })
+            .pipe(map(response => response.value));
     }
 }

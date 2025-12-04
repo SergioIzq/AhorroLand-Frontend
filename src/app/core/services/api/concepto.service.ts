@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-import { ApiResponse, ListResponse } from '@/core/models/common.model';
+import { Result, ListData } from '@/core/models/common.model';
 
 export interface ConceptoItem {
     id: string;
@@ -24,8 +24,8 @@ export class ConceptoService {
     search(search: string, limit: number = 10): Observable<ConceptoItem[]> {
         let params = new HttpParams().set('search', search).set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<ConceptoItem>>>(`${this.apiUrl}/search`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<ConceptoItem>>>(`${this.apiUrl}/search`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
@@ -34,15 +34,15 @@ export class ConceptoService {
     getRecent(limit: number = 5): Observable<ConceptoItem[]> {
         let params = new HttpParams().set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<ConceptoItem>>>(`${this.apiUrl}/recent`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<ConceptoItem>>>(`${this.apiUrl}/recent`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
      * Crear un nuevo concepto
      */
-    create(nombre: string): Observable<ConceptoItem> {
-        return this.http.post<ApiResponse<ConceptoItem>>(this.apiUrl, { nombre })
-            .pipe(map(response => response.data));
+    create(nombre: string): Observable<string> {
+        return this.http.post<Result<string>>(this.apiUrl, { nombre })
+            .pipe(map(response => response.value));
     }
 }

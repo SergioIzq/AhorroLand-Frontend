@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { shareReplay, map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { Gasto, ResumenGastos, GastoCreate } from '../../models';
-import { ApiResponse, PaginatedResponse } from '@/core/models/common.model';
+import { PaginatedList, Result } from '@/core/models/common.model';
 
 @Injectable({
     providedIn: 'root'
@@ -25,7 +25,7 @@ export class GastoService {
         searchTerm?: string,
         sortColumn?: string,
         sortOrder?: string
-    ): Observable<PaginatedResponse<Gasto>> {
+    ): Observable<PaginatedList<Gasto>> {
         let params = new HttpParams()
             .set('page', page.toString())
             .set('pageSize', pageSize.toString());
@@ -40,19 +40,19 @@ export class GastoService {
             params = params.set('sortOrder', sortOrder);
         }
         
-        // API devuelve ApiResponse<PaginatedResponse<Gasto>>, extraer data
-        return this.http.get<ApiResponse<PaginatedResponse<Gasto>>>(`${this.apiUrl}/paginated`, { params })
-            .pipe(map(response => response.data));
+        // API devuelve Result<PaginatedList<Gasto>>, extraer data
+        return this.http.get<Result<PaginatedList<Gasto>>>(`${this.apiUrl}`, { params })
+            .pipe(map(response => response.value));
     }
 
     /**
      * Obtener todos los gastos sin paginación (para compatibilidad)
      */
     getAllGastos(): Observable<Gasto[]> {
-        return this.http.get<ApiResponse<PaginatedResponse<Gasto>>>(this.apiUrl, {
+        return this.http.get<Result<PaginatedList<Gasto>>>(this.apiUrl, {
             params: new HttpParams().set('pageSize', '1000')
         }).pipe(
-            map(response => response.data.items),
+            map(response => response.value.items),
             shareReplay({ bufferSize: 1, refCount: true })
         );
     }
@@ -66,8 +66,8 @@ export class GastoService {
             .set('fechaFin', fechaFin)
             .set('pageSize', '1000');
         
-        return this.http.get<ApiResponse<PaginatedResponse<Gasto>>>(`${this.apiUrl}/periodo`, { params }).pipe(
-            map(response => response.data.items),
+        return this.http.get<Result<PaginatedList<Gasto>>>(`${this.apiUrl}/periodo`, { params }).pipe(
+            map(response => response.value.items),
             shareReplay({ bufferSize: 1, refCount: true })
         );
     }
@@ -103,18 +103,18 @@ export class GastoService {
      * Obtener gasto por ID
      */
     getById(id: string): Observable<Gasto> {
-        return this.http.get<ApiResponse<Gasto>>(`${this.apiUrl}/${id}`)
-            .pipe(map(response => response.data));
+        return this.http.get<Result<Gasto>>(`${this.apiUrl}/${id}`)
+            .pipe(map(response => response.value));
     }
 
     /**
      * Crear gasto
      */
-    create(gasto: GastoCreate): Observable<Gasto> {
-        return this.http.post<ApiResponse<Gasto>>(this.apiUrl, gasto).pipe(
+    create(gasto: GastoCreate): Observable<string> {
+        return this.http.post<Result<string>>(this.apiUrl, gasto).pipe(
             map(response => {
                 this.invalidateCache();
-                return response.data;
+                return response.value;
             })
         );
     }
@@ -123,10 +123,10 @@ export class GastoService {
      * Actualizar gasto
      */
     update(id: string, gasto: Partial<Gasto>): Observable<Gasto> {
-        return this.http.put<ApiResponse<Gasto>>(`${this.apiUrl}/${id}`, gasto).pipe(
+        return this.http.put<Result<Gasto>>(`${this.apiUrl}/${id}`, gasto).pipe(
             map(response => {
                 this.invalidateCache();
-                return response.data;
+                return response.value;
             })
         );
     }

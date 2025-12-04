@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-import { ApiResponse, ListResponse } from '@/core/models/common.model';
+import { Result, ListData } from '@/core/models/common.model';
 
 export interface CategoriaItem {
     id: string;
@@ -26,8 +26,8 @@ export class CategoriaService {
             .set('search', search)
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<CategoriaItem>>>(`${this.apiUrl}/search`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<CategoriaItem>>>(`${this.apiUrl}/search`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
@@ -37,15 +37,15 @@ export class CategoriaService {
         let params = new HttpParams()
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<CategoriaItem>>>(`${this.apiUrl}/recent`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<CategoriaItem>>>(`${this.apiUrl}/recent`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
      * Crear una nueva categoría
      */
     create(nombre: string): Observable<CategoriaItem> {
-        return this.http.post<ApiResponse<CategoriaItem>>(this.apiUrl, { nombre })
-            .pipe(map(response => response.data));
+        return this.http.post<Result<CategoriaItem>>(this.apiUrl, { nombre })
+            .pipe(map(response => response.value));
     }
 }

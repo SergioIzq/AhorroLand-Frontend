@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password'; // Importante para el input de password
+import { MessageService } from 'primeng/api';
 import { AuthStore } from '../../../core/stores/auth.store';
 import { AuthWrapperComponent } from '../components/auth-wrapper.component';
 import { CommonModule } from '@angular/common';
@@ -62,6 +63,7 @@ export class ResetPasswordPage implements OnInit {
     authStore = inject(AuthStore);
     private fb = inject(FormBuilder);
     private route = inject(ActivatedRoute);
+    private messageService = inject(MessageService);
 
     invalidLink = signal(false);
     success = signal(false);
@@ -75,7 +77,9 @@ export class ResetPasswordPage implements OnInit {
     });
 
     ngOnInit() {
+        // Limpiar errores y toasts anteriores al entrar a esta página
         this.authStore.clearError();
+        this.messageService.clear();
 
         // Obtenemos los parametros que enviamos en el email
         this.token = this.route.snapshot.queryParamMap.get('token');

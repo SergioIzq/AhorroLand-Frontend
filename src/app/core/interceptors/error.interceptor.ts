@@ -24,13 +24,19 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
                 return throwError(() => error);
             }
 
+            // 2. Solo omitir 401 si NO es un endpoint de autenticación
+            // Los errores de login/registro SÍ deben mostrar mensaje
+            if (error.status === 401 && !req.url.includes('/auth/')) {
+                return throwError(() => error);
+            }
+
             // Valores por defecto (Fallback)
             let severity = 'error';
             
-            // 2. Extraemos la data usando nuestra nueva lógica
+            // 3. Extraemos la data usando nuestra nueva lógica
             const { title, message } = extractErrorData(error);
 
-            // 3. Mostrar Toast (PrimeNG)
+            // 4. Mostrar Toast (PrimeNG)
             if (messageService) {
                 messageService.add({
                     severity: severity,

@@ -65,7 +65,7 @@ export class PersonaCreateModalComponent {
     // Inputs/Outputs
     visible = input<boolean>(false);
     visibleChange = output<boolean>();
-    created = output<PersonaItem>();
+    created = output<string>();
     cancel = output<void>();
 
     // Estado del formulario
@@ -111,7 +111,7 @@ export class PersonaCreateModalComponent {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
-                    detail: `Persona "${nuevaPersona.nombre}" creada correctamente`,
+                    detail: `Persona "${this.nombre.trim()}" creada correctamente`,
                     life: 3000
                 });
                 this.created.emit(nuevaPersona);

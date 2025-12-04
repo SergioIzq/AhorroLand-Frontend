@@ -1,11 +1,13 @@
 import { Component, effect, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { DividerModule } from 'primeng/divider';
+import { MessageService } from 'primeng/api';
+import { CommonModule } from '@angular/common';
 import { AuthStore } from '../../../core/stores/auth.store';
 import { AuthWrapperComponent } from '../components/auth-wrapper.component';
 
@@ -13,12 +15,13 @@ import { AuthWrapperComponent } from '../components/auth-wrapper.component';
     selector: 'app-register-page',
     standalone: true,
     imports: [
+        CommonModule,
         AuthWrapperComponent,
         ButtonModule, 
         CheckboxModule, 
         InputTextModule, 
         PasswordModule, 
-        FormsModule, 
+        ReactiveFormsModule, 
         RouterModule, 
         DividerModule
     ],
@@ -34,7 +37,7 @@ import { AuthWrapperComponent } from '../components/auth-wrapper.component';
                     </div>
                     <h2 class="text-2xl font-bold mb-4 text-surface-900 dark:text-surface-0">¡Revisa tu correo!</h2>
                     <p class="text-muted-color mb-6">
-                        Hemos enviado un enlace de confirmación a <strong>{{ email }}</strong>. 
+                        Hemos enviado un enlace de confirmación a <strong>{{ registerForm.get('email')?.value }}</strong>. 
                         Activa tu cuenta para poder iniciar sesión.
                     </p>
                     <p-button label="Ir al Login" routerLink="/auth/login" [outlined]="true" styleClass="w-full"></p-button>
@@ -42,26 +45,33 @@ import { AuthWrapperComponent } from '../components/auth-wrapper.component';
             } 
             
             @else {
-                <div class="w-full md:w-120">
+                <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="w-full md:w-120">
                     
-                    <div class="flex flex-col gap-5"> <div>
+                    <div class="flex flex-col gap-5">
+                        <div>
                             <label for="email" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Email</label>
                             <input 
                                 pInputText 
                                 id="email" 
+                                formControlName="email"
                                 type="text" 
                                 placeholder="tu@email.com" 
                                 class="w-full" 
-                                [(ngModel)]="email" 
-                                [disabled]="authStore.loading()" />
+                                [ngClass]="{'ng-invalid ng-dirty': registerForm.get('email')?.touched && registerForm.get('email')?.invalid}" />
+                            @if (registerForm.get('email')?.touched && registerForm.get('email')?.hasError('required')) {
+                                <small class="text-red-500 mt-1 block">El correo es obligatorio.</small>
+                            }
+                            @if (registerForm.get('email')?.touched && registerForm.get('email')?.hasError('email')) {
+                                <small class="text-red-500 mt-1 block">Ingresa un correo válido.</small>
+                            }
                         </div>
 
                         <div>
                             <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
                             <p-password
                                 id="password"
-                                [(ngModel)]="password"
-                                placeholder="Mínimo 8 caracteres"
+                                formControlName="password"
+                                placeholder="Mínimo 6 caracteres"
                                 [toggleMask]="true"
                                 styleClass="w-full"
                                 [fluid]="true"
@@ -69,37 +79,45 @@ import { AuthWrapperComponent } from '../components/auth-wrapper.component';
                                 promptLabel="Ingresa una contraseña"
                                 weakLabel="Débil"
                                 mediumLabel="Regular"
-                                strongLabel="Fuerte"
-                                [disabled]="authStore.loading()"></p-password>
+                                strongLabel="Fuerte"></p-password>
+                            @if (registerForm.get('password')?.touched && registerForm.get('password')?.hasError('required')) {
+                                <small class="text-red-500 mt-1 block">La contraseña es obligatoria.</small>
+                            }
+                            @if (registerForm.get('password')?.touched && registerForm.get('password')?.hasError('minlength')) {
+                                <small class="text-red-500 mt-1 block">La contraseña debe tener al menos 6 caracteres.</small>
+                            }
                         </div>
 
                         <div class="flex items-center mb-2">
                             <p-checkbox 
-                                [(ngModel)]="termsAccepted" 
+                                formControlName="termsAccepted"
                                 id="terms" 
                                 binary="true" 
-                                styleClass="mr-2" 
-                                [disabled]="authStore.loading()"></p-checkbox>
+                                styleClass="mr-2"></p-checkbox>
                             <label for="terms" class="text-surface-900 dark:text-surface-0"> 
                                 Acepto los <a class="text-primary font-bold hover:underline cursor-pointer">términos y condiciones</a> 
                             </label>
                         </div>
+                        @if (registerForm.get('termsAccepted')?.touched && registerForm.get('termsAccepted')?.hasError('requiredTrue')) {
+                            <small class="text-red-500 mt-1 block">Debes aceptar los términos y condiciones.</small>
+                        }
 
                         <p-button 
                             label="Registrarse" 
+                            type="submit"
                             styleClass="w-full" 
                             [loading]="authStore.loading()" 
-                            [disabled]="!isValidForm()" 
-                            (onClick)="onRegister()"></p-button>
+                            [disabled]="registerForm.invalid"></p-button>
                     </div>
+                </form>
 
-                    <div class="mt-8 text-center"> <p-divider align="center" class="my-4">
-                            <span class="text-muted-color text-sm">¿Ya tienes cuenta?</span>
-                        </p-divider>
-                        <a routerLink="/auth/login" class="font-medium text-primary hover:text-primary-600 cursor-pointer transition-colors no-underline">
-                            Iniciar sesión aquí
-                        </a>
-                    </div>
+                <div class="mt-8 text-center">
+                    <p-divider align="center" class="my-4">
+                        <span class="text-muted-color text-sm">¿Ya tienes cuenta?</span>
+                    </p-divider>
+                    <a routerLink="/auth/login" class="font-medium text-primary hover:text-primary-600 cursor-pointer transition-colors no-underline">
+                        Iniciar sesión aquí
+                    </a>
                 </div>
             }
 
@@ -109,15 +127,32 @@ import { AuthWrapperComponent } from '../components/auth-wrapper.component';
 export class RegisterPage {
     authStore = inject(AuthStore);
     private router = inject(Router);
-
-    email: string = '';
-    password: string = '';
-    termsAccepted: boolean = false;
+    private messageService = inject(MessageService);
+    private fb = inject(FormBuilder);
     
     showSuccessView = signal(false);
     private isSubmitting = false;
 
+    registerForm = this.fb.group({
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(6)]],
+        termsAccepted: [false, [Validators.requiredTrue]]
+    });
+
     constructor() {
+        // Limpiar errores y toasts anteriores al entrar a esta página
+        this.authStore.clearError();
+        this.messageService.clear();
+        
+        // Manejar estado de carga en el formulario
+        effect(() => {
+            if (this.authStore.loading()) {
+                this.registerForm.disable();
+            } else {
+                this.registerForm.enable();
+            }
+        });
+        
         effect(() => {
             if (this.authStore.user() && !this.authStore.loading()) {
                 this.router.navigate(['/']);
@@ -137,16 +172,17 @@ export class RegisterPage {
         });
     }
 
-    isValidForm(): boolean {
-        return this.email.length > 0 && this.password.length > 0 && this.termsAccepted;
-    }
-
     onRegister() {
-        if (!this.isValidForm()) return;
+        if (this.registerForm.invalid) {
+            this.registerForm.markAllAsTouched();
+            return;
+        }
+        
         this.isSubmitting = true;
+        const { email, password } = this.registerForm.value;
         this.authStore.register({ 
-            correo: this.email, 
-            contrasena: this.password 
+            correo: email!, 
+            contrasena: password! 
         });
     }
 }

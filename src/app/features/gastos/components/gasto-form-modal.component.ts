@@ -65,7 +65,9 @@ interface GastoFormData extends Omit<Partial<Gasto>, 'fecha'> {
                             />
                             <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" [outlined]="true" (click)="openCreateConcepto()" pTooltip="Crear nuevo concepto" />
                         </div>
-                        <small class="text-red-500" *ngIf="submitted() && !selectedConcepto"> El concepto es requerido. </small>
+                        @if (submitted() && !selectedConcepto) {
+                            <small class="text-red-500"> El concepto es requerido. </small>
+                        }
                     </div>
 
                     <!-- Categoría con Autocomplete + Botón crear -->
@@ -376,12 +378,16 @@ export class GastoFormModalComponent {
     }
 
     // Handlers cuando se crea un nuevo item
-    onConceptoCreated(nuevoConcepto: ConceptoItem) {
-        // Seleccionar automáticamente el concepto recién creado
-        this.selectedConcepto = nuevoConcepto;
-        this.formData.conceptoId = nuevoConcepto.id;
-        this.formData.conceptoNombre = nuevoConcepto.nombre;
+    onConceptoCreated(nuevoConceptoId: string) {
+        // El modal de concepto devuelve solo el ID
+        // Necesitamos hacer fetch del concepto completo o construirlo con el nombre ingresado
+        // Por ahora, marcamos que se debe seleccionar manualmente o refrescar la lista
         this.showConceptoCreateModal = false;
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Concepto creado',
+            detail: 'Concepto creado exitosamente. Por favor seléccionelo de la lista.'
+        });
     }
 
     onCategoriaCreated(nuevaCategoria: CategoriaItem) {
@@ -400,12 +406,14 @@ export class GastoFormModalComponent {
         this.showProveedorCreateModal = false;
     }
 
-    onPersonaCreated(nuevaPersona: PersonaItem) {
-        // Seleccionar automáticamente la persona recién creada
-        this.selectedPersona = nuevaPersona;
-        this.formData.personaId = nuevaPersona.id;
-        this.formData.personaNombre = nuevaPersona.nombre;
+    onPersonaCreated(nuevaPersonaId: string) {
+        // El modal de persona devuelve solo el ID
         this.showPersonaCreateModal = false;
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Persona creada',
+            detail: 'Persona creada exitosamente. Por favor seléccionela de la lista.'
+        });
     }
 
     onSave() {

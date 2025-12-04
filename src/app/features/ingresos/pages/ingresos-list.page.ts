@@ -18,7 +18,6 @@ import { IngresosStore } from '../stores/ingresos.store';
 import { Ingreso } from '@/core/models';
 import { IngresoFormModalComponent } from '../components/ingreso-form-modal.component';
 import { BasePageComponent } from '@/shared/components/base-page.component';
-import { IngresoService } from '@/core/services/api/ingreso.service';
 
 @Component({
     selector: 'app-ingresos-list-page',
@@ -230,7 +229,6 @@ import { IngresoService } from '@/core/services/api/ingreso.service';
 })
 export class IngresosListPage extends BasePageComponent implements OnDestroy {
     ingresosStore: InstanceType<typeof IngresosStore> = inject(IngresosStore);
-    private ingresoService = inject(IngresoService);
 
     @ViewChild('dt') dt!: Table;
 
@@ -335,18 +333,15 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
     async onSaveIngreso(ingreso: Partial<Ingreso>) {
         if (ingreso.id) {
             // Actualizar ingreso existente
-            await this.executeWithFeedback(
-                this.ingresoService.update(ingreso.id, ingreso),
-                {
-                    successMessage: 'Ingreso actualizado correctamente',
-                    errorMessage: 'Error al actualizar el ingreso',
-                    onSuccess: () => {
-                        this.ingresoDialog = false;
-                        this.currentIngreso = {};
-                        this.reloadIngresos();
-                    }
-                }
-            );
+            try {
+                await this.ingresosStore.updateIngreso({ id: ingreso.id, ingreso });
+                this.showSuccess('Ingreso actualizado correctamente');
+                this.ingresoDialog = false;
+                this.currentIngreso = {};
+                this.reloadIngresos();
+            } catch (error: any) {
+                this.showError(error.userMessage || 'Error al actualizar el ingreso');
+            }
         } else {
             // TODO: Implementar creación cuando el backend esté listo
             this.showInfo('La creación de ingresos estará disponible cuando se conecten los endpoints de catálogos', 'Próximamente');
@@ -364,16 +359,13 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         this.confirmAction(
             `¿Estás seguro de eliminar el ingreso "${ingreso.conceptoNombre}"?`,
             async () => {
-                await this.executeWithFeedback(
-                    this.ingresoService.delete(ingreso.id),
-                    {
-                        successMessage: 'Ingreso eliminado correctamente',
-                        errorMessage: 'Error al eliminar el ingreso',
-                        onSuccess: () => {
-                            this.reloadIngresos();
-                        }
-                    }
-                );
+                try {
+                    await this.ingresosStore.deleteIngreso(ingreso.id);
+                    this.showSuccess('Ingreso eliminado correctamente');
+                    this.reloadIngresos();
+                } catch (error: any) {
+                    this.showError(error.userMessage || 'Error al eliminar el ingreso');
+                }
             },
             {
                 header: 'Confirmar eliminación',
@@ -387,21 +379,18 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         this.confirmAction(
             '¿Estás seguro de eliminar los ingresos seleccionados?',
             async () => {
-                const deletePromises = this.selectedIngresos.map(ingreso => 
-                    this.ingresoService.delete(ingreso.id).toPromise()
-                );
-                
-                await this.executeWithFeedback(
-                    Promise.all(deletePromises),
-                    {
-                        successMessage: 'Ingresos eliminados correctamente',
-                        errorMessage: 'Error al eliminar algunos ingresos',
-                        onSuccess: () => {
-                            this.selectedIngresos = [];
-                            this.reloadIngresos();
-                        }
-                    }
-                );
+                try {
+                    const deletePromises = this.selectedIngresos.map(ingreso => 
+                        this.ingresosStore.deleteIngreso(ingreso.id)
+                    );
+                    
+                    await Promise.all(deletePromises);
+                    this.showSuccess('Ingresos eliminados correctamente');
+                    this.selectedIngresos = [];
+                    this.reloadIngresos();
+                } catch (error: any) {
+                    this.showError(error.userMessage || 'Error al eliminar algunos ingresos');
+                }
             },
             {
                 header: 'Confirmar',

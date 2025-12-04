@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-import { ApiResponse, ListResponse } from '@/core/models/common.model';
+import { Result, ListData } from '@/core/models/common.model';
 
 export interface ClienteItem {
     id: string;
@@ -26,8 +26,8 @@ export class ClienteService {
             .set('searchTerm', searchTerm)
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<ClienteItem>>>(`${this.apiUrl}/search`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<ClienteItem>>>(`${this.apiUrl}/search`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
@@ -37,15 +37,15 @@ export class ClienteService {
         let params = new HttpParams()
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<ClienteItem>>>(`${this.apiUrl}/recent`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<ClienteItem>>>(`${this.apiUrl}/recent`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
      * Crear un nuevo cliente
      */
     create(nombre: string): Observable<ClienteItem> {
-        return this.http.post<ApiResponse<ClienteItem>>(this.apiUrl, { nombre })
-            .pipe(map(response => response.data));
+        return this.http.post<Result<ClienteItem>>(this.apiUrl, { nombre })
+            .pipe(map(response => response.value));
     }
 }

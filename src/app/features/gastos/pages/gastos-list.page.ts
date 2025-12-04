@@ -18,7 +18,6 @@ import { GastosStore } from '../stores/gastos.store';
 import { Gasto } from '@/core/models';
 import { GastoFormModalComponent } from '../components/gasto-form-modal.component';
 import { BasePageComponent } from '@/shared/components';
-import { GastoService } from '@/core/services/api/gasto.service';
 
 @Component({
     selector: 'app-gastos-list-page',
@@ -230,7 +229,6 @@ import { GastoService } from '@/core/services/api/gasto.service';
 })
 export class GastosListPage extends BasePageComponent implements OnDestroy {
     gastosStore = inject(GastosStore);
-    private gastoService = inject(GastoService);
 
     @ViewChild('dt') dt!: Table;
 
@@ -326,18 +324,15 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
     async onSaveGasto(gasto: Partial<Gasto>) {
         if (gasto.id) {
             // Actualizar gasto existente
-            await this.executeWithFeedback(
-                this.gastoService.update(gasto.id, gasto),
-                {
-                    successMessage: 'Gasto actualizado correctamente',
-                    errorMessage: 'Error al actualizar el gasto',
-                    onSuccess: () => {
-                        this.gastoDialog = false;
-                        this.currentGasto = {};
-                        this.reloadGastos();
-                    }
-                }
-            );
+            try {
+                await this.gastosStore.updateGasto({ id: gasto.id, gasto });
+                this.showSuccess('Gasto actualizado correctamente');
+                this.gastoDialog = false;
+                this.currentGasto = {};
+                this.reloadGastos();
+            } catch (error: any) {
+                this.showError(error.userMessage || 'Error al actualizar el gasto');
+            }
         } else {
             // TODO: Implementar creación cuando el backend esté listo
             this.showInfo('La creación de gastos estará disponible cuando se conecten los endpoints de catálogos', 'Próximamente');
@@ -355,16 +350,13 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
         this.confirmAction(
             `¿Estás seguro de eliminar el gasto "${gasto.conceptoNombre}"?`,
             async () => {
-                await this.executeWithFeedback(
-                    this.gastoService.delete(gasto.id),
-                    {
-                        successMessage: 'Gasto eliminado correctamente',
-                        errorMessage: 'Error al eliminar el gasto',
-                        onSuccess: () => {
-                            this.reloadGastos();
-                        }
-                    }
-                );
+                try {
+                    await this.gastosStore.deleteGasto(gasto.id);
+                    this.showSuccess('Gasto eliminado correctamente');
+                    this.reloadGastos();
+                } catch (error: any) {
+                    this.showError(error.userMessage || 'Error al eliminar el gasto');
+                }
             },
             {
                 header: 'Confirmar eliminación',
@@ -378,21 +370,18 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
         this.confirmAction(
             '¿Estás seguro de eliminar los gastos seleccionados?',
             async () => {
-                const deletePromises = this.selectedGastos.map(gasto => 
-                    this.gastoService.delete(gasto.id).toPromise()
-                );
-                
-                await this.executeWithFeedback(
-                    Promise.all(deletePromises),
-                    {
-                        successMessage: 'Gastos eliminados correctamente',
-                        errorMessage: 'Error al eliminar algunos gastos',
-                        onSuccess: () => {
-                            this.selectedGastos = [];
-                            this.reloadGastos();
-                        }
-                    }
-                );
+                try {
+                    const deletePromises = this.selectedGastos.map(gasto => 
+                        this.gastosStore.deleteGasto(gasto.id)
+                    );
+                    
+                    await Promise.all(deletePromises);
+                    this.showSuccess('Gastos eliminados correctamente');
+                    this.selectedGastos = [];
+                    this.reloadGastos();
+                } catch (error: any) {
+                    this.showError(error.userMessage || 'Error al eliminar algunos gastos');
+                }
             },
             {
                 header: 'Confirmar',

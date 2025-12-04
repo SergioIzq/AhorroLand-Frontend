@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageService } from 'primeng/api';
 import { AuthStore } from '../../../core/stores/auth.store'; // Asegúrate de la ruta
 import { AuthWrapperComponent } from '../components/auth-wrapper.component';
 import { CommonModule } from '@angular/common';
@@ -90,6 +91,7 @@ import { CommonModule } from '@angular/common';
 export class ForgotPasswordPage {
     authStore = inject(AuthStore);
     private fb = inject(FormBuilder);
+    private messageService = inject(MessageService);
     
     // Controlamos el estado de éxito localmente para cambiar la vista
     emailSent = signal(false);
@@ -97,6 +99,12 @@ export class ForgotPasswordPage {
     form = this.fb.group({
         email: ['', [Validators.required, Validators.email]]
     });
+
+    constructor() {
+        // Limpiar errores y toasts anteriores al entrar a esta página
+        this.authStore.clearError();
+        this.messageService.clear();
+    }
 
     async onSubmit() {
         if (this.form.invalid) return;

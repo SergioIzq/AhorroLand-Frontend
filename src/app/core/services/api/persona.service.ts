@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-import { ApiResponse, ListResponse } from '@/core/models/common.model';
+import { ListData, Result } from '@/core/models/common.model';
 
 export interface PersonaItem {
     id: string;
@@ -26,8 +26,8 @@ export class PersonaService {
             .set('search', search)
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<PersonaItem>>>(`${this.apiUrl}/search`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<PersonaItem>>>(`${this.apiUrl}/search`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
@@ -37,15 +37,15 @@ export class PersonaService {
         let params = new HttpParams()
             .set('limit', limit.toString());
 
-        return this.http.get<ApiResponse<ListResponse<PersonaItem>>>(`${this.apiUrl}/recent`, { params })
-            .pipe(map(response => response.data.items));
+        return this.http.get<Result<ListData<PersonaItem>>>(`${this.apiUrl}/recent`, { params })
+            .pipe(map(response => response.value.items));
     }
 
     /**
      * Crear una nueva persona
      */
-    create(nombre: string): Observable<PersonaItem> {
-        return this.http.post<ApiResponse<PersonaItem>>(this.apiUrl, { nombre })
-            .pipe(map(response => response.data));
+    create(nombre: string): Observable<string> {
+        return this.http.post<Result<string>>(this.apiUrl, { nombre })
+            .pipe(map(response => response.value));
     }
 }

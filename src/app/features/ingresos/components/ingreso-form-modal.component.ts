@@ -83,9 +83,11 @@ interface IngresoFormData extends Omit<Partial<Ingreso>, 'fecha'> {
                                 (click)="openCreateConcepto()"
                                 pTooltip="Crear nuevo concepto" />
                         </div>
-                        <small class="text-red-500" *ngIf="submitted() && !selectedConcepto">
-                            El concepto es requerido.
-                        </small>
+                        @if (submitted() && !selectedConcepto) {
+                            <small class="text-red-500">
+                                El concepto es requerido.
+                            </small>
+                        }
                     </div>
 
                     <!-- Categoría con Autocomplete + Botón crear -->
@@ -174,9 +176,11 @@ interface IngresoFormData extends Omit<Partial<Ingreso>, 'fecha'> {
                             locale="es-ES"
                             [min]="0"
                             fluid />
-                        <small class="text-red-500" *ngIf="submitted() && !formData.importe">
-                            El importe es requerido.
-                        </small>
+                        @if (submitted() && !formData.importe) {
+                            <small class="text-red-500">
+                                El importe es requerido.
+                            </small>
+                        }
                     </div>
 
                     <!-- Fecha -->
@@ -457,12 +461,14 @@ export class IngresoFormModalComponent {
     }
 
     // Handlers cuando se crea un nuevo item
-    onConceptoCreated(nuevoConcepto: ConceptoItem) {
-        // Seleccionar automáticamente el concepto recién creado
-        this.selectedConcepto = nuevoConcepto;
-        this.formData.conceptoId = nuevoConcepto.id;
-        this.formData.conceptoNombre = nuevoConcepto.nombre;
+    onConceptoCreated(nuevoConceptoId: string) {
+        // El modal de concepto devuelve solo el ID
         this.showConceptoCreateModal = false;
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Concepto creado',
+            detail: 'Concepto creado exitosamente. Por favor seléccionelo de la lista.'
+        });
     }
 
     onCategoriaCreated(nuevaCategoria: CategoriaItem) {
@@ -481,12 +487,14 @@ export class IngresoFormModalComponent {
         this.showClienteCreateModal = false;
     }
 
-    onPersonaCreated(nuevaPersona: PersonaItem) {
-        // Seleccionar automáticamente la persona recién creada
-        this.selectedPersona = nuevaPersona;
-        this.formData.personaId = nuevaPersona.id;
-        this.formData.personaNombre = nuevaPersona.nombre;
+    onPersonaCreated(nuevaPersonaId: string) {
+        // El modal de persona devuelve solo el ID
         this.showPersonaCreateModal = false;
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Persona creada',
+            detail: 'Persona creada exitosamente. Por favor seléccionela de la lista.'
+        });
     }
 
     onSave() {

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { DashboardResumen, HistoricoMensual } from '../../models/dashboard.model';
-import { ApiResponse, ListResponse } from '../../models/common.model';
+import { Result, ListData } from '../../models/common.model';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -28,15 +28,15 @@ export class DashboardService {
             httpParams = httpParams.set('_t', Date.now().toString());
         }
         
-        return this.http.get<ApiResponse<DashboardResumen>>(`${this.apiUrl}/resumen`, { 
+        return this.http.get<Result<DashboardResumen>>(`${this.apiUrl}/resumen`, { 
             params: httpParams,
             withCredentials: true 
-        }).pipe(map(response => response.data));
+        }).pipe(map(response => response.value));
     }
 
     getHistorico(meses: number = 12): Observable<HistoricoMensual[]> {
         const params = new HttpParams().set('meses', meses);
-        return this.http.get<ListResponse<HistoricoMensual>>(`${this.apiUrl}/historico`, { 
+        return this.http.get<ListData<HistoricoMensual>>(`${this.apiUrl}/historico`, { 
             params,
             withCredentials: true 
         }).pipe(map(response => response.items));

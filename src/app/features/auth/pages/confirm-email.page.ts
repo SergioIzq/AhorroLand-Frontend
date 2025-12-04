@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MessageService } from 'primeng/api';
 import { AuthStore } from '../../../core/stores/auth.store';
 import { AuthWrapperComponent } from '../components/auth-wrapper.component';
 import { BasePageComponent } from '@/shared/components';
@@ -101,7 +102,9 @@ export class ConfirmEmail extends BasePageComponent implements OnInit {
     });
 
     ngOnInit() {
+        // Limpiar errores y toasts anteriores al entrar a esta página
         this.authStore.clearError();
+        this.messageService.clear();
 
         const token = this.route.snapshot.queryParamMap.get('token');
 

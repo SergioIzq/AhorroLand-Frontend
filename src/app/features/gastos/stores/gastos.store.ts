@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, debounceTime } from 'rxjs';
+import { pipe, switchMap, tap, debounceTime, firstValueFrom } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { GastoService } from '@/core/services/api/gasto.service';
 import { Gasto, GastoCreate } from '@/core/models';
@@ -156,7 +156,7 @@ export const GastosStore = signalStore(
                                 console.log('[STORE] Respuesta recibida:', response);
                                 patchState(store, {
                                     gastos: response.items,
-                                    totalRecords: response.total,
+                                    totalRecords: response.totalCount,
                                     loading: false,
                                     error: null
                                 });
@@ -201,77 +201,62 @@ export const GastosStore = signalStore(
         ),
         
         // Crear gasto
-        createGasto: rxMethod<GastoCreate>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap((gasto) =>
-                    gastoService.create(gasto).pipe(
-                        tapResponse({
-                            next: (newGasto) => {
-                                patchState(store, {
-                                    gastos: [...store.gastos(), newGasto],
-                                    loading: false
-                                });
-                            },
-                            error: (error: any) => {
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al crear gasto'
-                                });
-                            }
-                        })
-                    )
-                )
-            )
-        ),
+        async createGasto(gasto: GastoCreate): Promise<string> {
+            patchState(store, { loading: true, error: null });
+            
+            try {
+                const newGastoId = await firstValueFrom(gastoService.create(gasto));
+                // El backend solo devuelve el ID, no el objeto completo
+                // Necesitaremos recargar la lista o hacer un fetch del gasto por ID
+                patchState(store, { loading: false });
+                return newGastoId;
+            } catch (error: any) {
+                patchState(store, {
+                    loading: false,
+                    error: error.userMessage || 'Error al crear gasto'
+                });
+                throw error;
+            }
+        },
         
         // Actualizar gasto
-        updateGasto: rxMethod<{ id: string; gasto: Partial<Gasto> }>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap(({ id, gasto }) =>
-                    gastoService.update(id, gasto).pipe(
-                        tapResponse({
-                            next: (updatedGasto) => {
-                                const gastos = store.gastos().map(g =>
-                                    g.id === id ? updatedGasto : g
-                                );
-                                patchState(store, { gastos, loading: false });
-                            },
-                            error: (error: any) => {
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al actualizar gasto'
-                                });
-                            }
-                        })
-                    )
-                )
-            )
-        ),
+        async updateGasto(payload: { id: string; gasto: Partial<Gasto> }): Promise<void> {
+            const { id, gasto } = payload;
+            patchState(store, { loading: true, error: null });
+            
+            try {
+                await firstValueFrom(gastoService.update(id, gasto));
+                
+                // Actualizar estado local
+                const gastos = store.gastos().map(g =>
+                    g.id === id ? { ...g, ...gasto } : g
+                );
+                patchState(store, { gastos, loading: false });
+            } catch (error: any) {
+                patchState(store, {
+                    loading: false,
+                    error: error.userMessage || 'Error al actualizar gasto'
+                });
+                throw error;
+            }
+        },
         
         // Eliminar gasto
-        deleteGasto: rxMethod<string>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap((id) =>
-                    gastoService.delete(id).pipe(
-                        tapResponse({
-                            next: () => {
-                                const gastos = store.gastos().filter(g => g.id !== id);
-                                patchState(store, { gastos, loading: false });
-                            },
-                            error: (error: any) => {
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al eliminar gasto'
-                                });
-                            }
-                        })
-                    )
-                )
-            )
-        ),
+        async deleteGasto(id: string): Promise<void> {
+            patchState(store, { loading: true, error: null });
+            
+            try {
+                await firstValueFrom(gastoService.delete(id));
+                const gastos = store.gastos().filter(g => g.id !== id);
+                patchState(store, { gastos, loading: false });
+            } catch (error: any) {
+                patchState(store, {
+                    loading: false,
+                    error: error.userMessage || 'Error al eliminar gasto'
+                });
+                throw error;
+            }
+        },
         
         // Buscar gastos con debounce
         searchGastos: rxMethod<string>(

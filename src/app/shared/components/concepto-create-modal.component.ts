@@ -128,7 +128,7 @@ export class ConceptoCreateModalComponent {
     visible = input<boolean>(false);
     placeholder = input<string>('Ej: Pago cliente');
     visibleChange = output<boolean>();
-    created = output<ConceptoItem>();
+    created = output<string>();
     cancel = output<void>();
 
     // Estado del formulario
@@ -253,11 +253,11 @@ export class ConceptoCreateModalComponent {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
-                    detail: `Concepto "${nuevoConcepto.nombre}" creado correctamente`,
+                    detail: `Concepto "${this.nombre.trim()}" creado correctamente`,
                     life: 3000
                 });
                 
-                this.created.emit(nuevoConcepto);
+                this.created.emit(this.nombre.trim());
                 this.closeModal();
             },
             error: (error) => {
