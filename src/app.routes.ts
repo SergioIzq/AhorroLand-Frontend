@@ -21,6 +21,14 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('./app/features/ingresos/ingresos.routes')
             },
             {
+                path: 'gastos-programados',
+                loadChildren: () => import('./app/features/gastos-programados/gastos-programados.routes')
+            },
+            {
+                path: 'ingresos-programados',
+                loadChildren: () => import('./app/features/ingresos-programados/ingresos-programados.routes')
+            },
+            {
                 path: 'cuentas',
                 loadChildren: () => import('./app/features/cuentas/cuentas.routes')
             },

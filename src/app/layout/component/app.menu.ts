@@ -95,17 +95,17 @@ export class AppMenu {
                     {
                         label: 'Gastos Programados',
                         icon: 'pi pi-fw pi-calendar-minus',
-                        routerLink: ['/programacion/gastos-programados']
+                        routerLink: ['/gastos-programados']
                     },
                     {
                         label: 'Ingresos Programados',
                         icon: 'pi pi-fw pi-calendar-plus',
-                        routerLink: ['/programacion/ingresos-programados']
+                        routerLink: ['/ingresos-programados']
                     },
                     {
                         label: 'Traspasos Programados',
                         icon: 'pi pi-fw pi-replay',
-                        routerLink: ['/programacion/traspasos-programados']
+                        routerLink: ['/traspasos-programados']
                     }
                 ]
             }
