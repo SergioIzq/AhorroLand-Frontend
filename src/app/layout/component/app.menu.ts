@@ -59,27 +59,27 @@ export class AppMenu {
                     {
                         label: 'Conceptos',
                         icon: 'pi pi-fw pi-list',
-                        routerLink: ['/catalogos/conceptos']
+                        routerLink: ['/conceptos']
                     },
                     {
                         label: 'Proveedores',
                         icon: 'pi pi-fw pi-building',
-                        routerLink: ['/catalogos/proveedores']
+                        routerLink: ['/proveedores']
                     },
                     {
                         label: 'Clientes',
                         icon: 'pi pi-fw pi-briefcase',
-                        routerLink: ['/catalogos/clientes']
+                        routerLink: ['/clientes']
                     },
                     {
                         label: 'Personas',
                         icon: 'pi pi-fw pi-users',
-                        routerLink: ['/catalogos/personas']
+                        routerLink: ['/personas']
                     },
                     {
                         label: 'Formas de Pago',
                         icon: 'pi pi-fw pi-money-bill',
-                        routerLink: ['/catalogos/formas-pago']
+                        routerLink: ['/formas-pago']
                     },
                                         {
                         label: 'Cuentas',

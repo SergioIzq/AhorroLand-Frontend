@@ -25,10 +25,13 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('./app/features/cuentas/cuentas.routes')
             },
             {
+                path: 'proveedores',
+                loadChildren: () => import('./app/features/proveedores/proveedores.routes')
+            },
+            {
                 path: 'auth/my-profile',
                 loadComponent: () => import('./app/features/auth/pages/my-profile.page').then((m) => m.MyProfilePage)
-            },
-            
+            }
         ]
     },
     {
