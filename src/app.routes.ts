@@ -25,6 +25,10 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('./app/features/cuentas/cuentas.routes')
             },
             {
+                path: 'clientes',
+                loadChildren: () => import('./app/features/clientes/clientes.routes')
+            },
+            {
                 path: 'proveedores',
                 loadChildren: () => import('./app/features/proveedores/proveedores.routes')
             },
