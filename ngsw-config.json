@@ -8,11 +8,11 @@
       "resources": {
         "files": [
           "/favicon.ico",
-          "/index.csr.html",
           "/index.html",
           "/manifest.webmanifest",
           "/*.css",
-          "/*.js"
+          "/*.js",
+          "/*.(svg|cur|jpg|jpeg|png|webp|gif|otf|ttf|woff|woff2|ani)" 
         ]
       }
     },
@@ -22,9 +22,45 @@
       "updateMode": "prefetch",
       "resources": {
         "files": [
-          "/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
+          "/assets/**",
+          "!/assets/icons/**" 
+        ]
+      }
+    },
+    {
+      "name": "critical-assets",
+      "installMode": "prefetch",
+      "resources": {
+        "files": [
+          "/assets/icons/**" 
         ]
       }
     }
+  ],
+  "dataGroups": [
+    {
+      "name": "catalogos-api",
+      "urls": [
+        "/api/categorias",
+        "/api/conceptos",
+        "/api/formas-pago",
+        "/api/cuentas",
+        "/api/personas",
+        "/api/clientes"
+      ],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 100,
+        "maxAge": "1d",
+        "timeout": "5s"
+      }
+    }
+  ],
+  "navigationUrls": [
+    "/**",
+    "!/**/*.*",
+    "!/**/*__*",
+    "!/api/**",
+    "!/hangfire/**"
   ]
 }

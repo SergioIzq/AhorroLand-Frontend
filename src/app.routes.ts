@@ -61,6 +61,10 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('./app/features/traspasos/traspasos.routes')
             },
             {
+                path: 'traspasos-programados',
+                loadChildren: () => import('./app/features/traspasos-programados/traspasos-programados.routes')
+            },
+            {
                 path: 'auth/my-profile',
                 loadComponent: () => import('./app/features/auth/pages/my-profile.page').then((m) => m.MyProfilePage)
             }

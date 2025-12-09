@@ -20,21 +20,7 @@ import { TraspasoFormModalComponent } from '../components/traspaso-form-modal.co
 @Component({
     selector: 'app-traspasos-list-page',
     standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ButtonModule,
-        InputTextModule,
-        ToastModule,
-        TableModule,
-        ToolbarModule,
-        InputIconModule,
-        IconFieldModule,
-        SkeletonModule,
-        TagModule,
-        BasePageTemplateComponent,
-        TraspasoFormModalComponent
-    ],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TableModule, ToolbarModule, InputIconModule, IconFieldModule, SkeletonModule, TagModule, BasePageTemplateComponent, TraspasoFormModalComponent],
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -149,11 +135,12 @@ import { TraspasoFormModalComponent } from '../components/traspaso-form-modal.co
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="6" style="padding: 2rem">
+                                <td colspan="8" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay traspasos</p>
                                         <p class="text-600 mb-4">Comienza agregando tu primer traspaso entre cuentas</p>
+                                        <p-button label="Crear Traspaso" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
@@ -164,12 +151,7 @@ import { TraspasoFormModalComponent } from '../components/traspaso-form-modal.co
         </app-base-page-template>
 
         <!-- Modal de Formulario -->
-        <app-traspaso-form-modal
-            [visible]="traspasoDialog"
-            [traspaso]="currentTraspaso"
-            (save)="saveTraspaso($event)"
-            (cancel)="hideDialog()"
-        />
+        <app-traspaso-form-modal [visible]="traspasoDialog" [traspaso]="currentTraspaso" (save)="saveTraspaso($event)" (cancel)="hideDialog()" />
     `
 })
 export class TraspasosListPage extends BasePageComponent {
@@ -202,7 +184,7 @@ export class TraspasosListPage extends BasePageComponent {
     }
 
     onLazyLoad(event: any) {
-        this.pageNumber = (event.first / event.rows) + 1;
+        this.pageNumber = event.first / event.rows + 1;
         this.pageSize = event.rows;
 
         if (event.sortField) {

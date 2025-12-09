@@ -20,21 +20,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 @Component({
     selector: 'app-categorias-list',
     standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ButtonModule,
-        TableModule,
-        InputTextModule,
-        ToastModule,
-        ConfirmDialogModule,
-        SkeletonModule,
-        ToolbarModule,
-        InputIconModule,
-        IconFieldModule,
-        CategoriaFormModalComponent,
-        BasePageTemplateComponent
-    ],
+    imports: [CommonModule, FormsModule, ButtonModule, TableModule, InputTextModule, ToastModule, ConfirmDialogModule, SkeletonModule, ToolbarModule, InputIconModule, IconFieldModule, CategoriaFormModalComponent, BasePageTemplateComponent],
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -119,25 +105,19 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="2" style="padding: 2rem">
+                                <td colspan="8" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay categorías</p>
                                         <p class="text-600 mb-4">Comienza agregando tu primera categoría</p>
+                                        <p-button label="Crear Categoría" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
                         </ng-template>
                     </p-table>
 
-                    <app-categoria-form-modal 
-                        [visible]="categoriaDialog()" 
-                        [categoria]="currentCategoria()" 
-                        (visibleChange)="categoriaDialog.set($event)" 
-                        (save)="onSaveCategoria($event)" 
-                        (cancel)="hideDialog()" 
-                    />
-
+                    <app-categoria-form-modal [visible]="categoriaDialog()" [categoria]="currentCategoria()" (visibleChange)="categoriaDialog.set($event)" (save)="onSaveCategoria($event)" (cancel)="hideDialog()" />
                 </div>
             </div>
         </app-base-page-template>
@@ -161,7 +141,7 @@ export class CategoriasListPage extends BasePageComponent {
     searchTerm = signal('');
     sortColumn = signal('nombre');
     sortOrder = signal('asc');
-    
+
     // Computed signal para saber si hay cambios pendientes
     hasChanges = computed(() => {
         const lastUpdate = this.categoriaStore.lastUpdated();
@@ -170,14 +150,14 @@ export class CategoriasListPage extends BasePageComponent {
 
     constructor() {
         super();
-        
+
         // Configurar búsqueda con debounce
         this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe((searchValue) => {
             this.searchTerm.set(searchValue);
             this.pageNumber.set(1);
             this.reloadCategorias();
         });
-        
+
         // Effect para sincronización automática cuando cambian los datos
         effect(() => {
             const lastUpdated = this.categoriaStore.lastUpdated();
@@ -189,7 +169,7 @@ export class CategoriasListPage extends BasePageComponent {
     }
 
     onLazyLoad(event: any) {
-        this.pageNumber.set((event.first / event.rows) + 1);
+        this.pageNumber.set(event.first / event.rows + 1);
         this.pageSize.set(event.rows);
 
         if (event.sortField) {
@@ -238,7 +218,7 @@ export class CategoriasListPage extends BasePageComponent {
 
     async onSaveCategoria(categoria: Partial<Categoria>) {
         const categoriaData = this.currentCategoria();
-        
+
         if (categoriaData.id) {
             try {
                 await this.categoriaStore.update(categoriaData.id, { nombre: categoria.nombre! });

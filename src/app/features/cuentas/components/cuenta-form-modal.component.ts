@@ -46,21 +46,6 @@ import { Cuenta } from '@/core/models/cuenta.model';
                             <small class="text-red-500"> El nombre es requerido. </small>
                         }
                     </div>
-
-                    <div>
-                        <label for="saldo" class="block font-bold mb-3">Saldo Inicial *</label>
-                        <p-inputNumber 
-                            id="saldo" 
-                            [(ngModel)]="formData.saldo" 
-                            mode="currency" 
-                            currency="EUR" 
-                            locale="es-ES" 
-                            [min]="0" 
-                            fluid />
-                        @if (submitted() && formData.saldo === undefined) {
-                            <small class="text-red-500"> El saldo inicial es requerido. </small>
-                        }
-                    </div>
                 </div>
             </ng-template>
 
@@ -115,7 +100,6 @@ export class CuentaFormModalComponent {
             this.isEditMode.set(false);
             this.formData = {
                 nombre: '',
-                saldo: 0
             };
         }
 
@@ -126,7 +110,7 @@ export class CuentaFormModalComponent {
         this.submitted.set(true);
 
         // Validaciones
-        if (!this.formData.nombre?.trim() || this.formData.saldo === undefined) {
+        if (!this.formData.nombre?.trim()) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Advertencia',

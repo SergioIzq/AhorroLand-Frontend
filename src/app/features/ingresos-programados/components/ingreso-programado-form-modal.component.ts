@@ -85,226 +85,218 @@ interface IngresoProgramadoFormData extends Omit<Partial<IngresoProgramado>, 'fe
             styleClass="p-sidebar-md surface-ground">
             
             <ng-template pTemplate="header">
-                <div class="flex flex-col">
+                <div class="flex align-items-center gap-2">
                     <span class="font-bold text-xl text-900">{{ isEditMode() ? 'Editar Ingreso Programado' : 'Nuevo Ingreso Programado' }}</span>
-                    <span class="text-500 text-sm mt-1">Configura la recurrencia de tus ingresos</span>
                 </div>
             </ng-template>
 
-            <div class="flex flex-col gap-5 py-2">
-                
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <div class="flex flex-col gap-4">
-                        <div class="field">
-                            <label for="concepto" class="font-semibold text-gray-700 block mb-2">Concepto *</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedConcepto"
-                                    [placeholder]="getConceptoPlaceholder()"
-                                    [suggestions]="filteredConceptos()"
-                                    (completeMethod)="searchConceptos($event)"
-                                    [showClear]="true"
-                                    (onClear)="onConceptoClear()"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    class="flex-1"
-                                    [forceSelection]="true"
-                                    (onSelect)="onConceptoSelect($event)"
-                                    inputStyleClass="font-semibold"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateConcepto()" pTooltip="Crear concepto"></button>
-                            </div>
-                            @if (submitted() && !selectedConcepto) {
-                                <small class="text-red-500 block mt-1">El concepto es requerido.</small>
-                            }
-                        </div>
+            <div class="grid grid-cols-12 gap-4 p-fluid py-2">
+                <div class="col-span-12 field">
+                    <label for="concepto" class="font-semibold text-gray-700 block mb-2">Concepto *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedConcepto"
+                            [placeholder]="getConceptoPlaceholder()"
+                            [suggestions]="filteredConceptos()"
+                            (completeMethod)="searchConceptos($event)"
+                            [showClear]="true"
+                            (onClear)="onConceptoClear()"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                            [forceSelection]="true"
+                            (onSelect)="onConceptoSelect($event)"
+                            inputStyleClass="font-semibold"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateConcepto()" pTooltip="Crear concepto"></button>
+                    </div>
+                    @if (submitted() && !selectedConcepto) {
+                        <small class="text-red-500 block mt-1">El concepto es requerido.</small>
+                    }
+                </div>
 
-                        <div class="field">
-                            <label for="importe" class="font-semibold text-gray-700 block mb-2">Importe Recurrente *</label>
-                            <p-inputNumber 
-                                id="importe" 
-                                [(ngModel)]="formData.importe" 
-                                mode="currency" 
-                                currency="EUR" 
-                                locale="es-ES" 
-                                [min]="0" 
-                                placeholder="0,00 €"
-                                inputStyleClass="text-right font-bold text-xl text-green-600 w-full" 
-                                class="w-full"
-                            />
-                            @if (submitted() && !formData.importe) {
-                                <small class="text-red-500 block mt-1">Requerido.</small>
-                            }
-                        </div>
+                <div class="col-span-12 md:col-span-6 field">
+                    <label for="importe" class="font-semibold text-gray-700 block mb-2">Importe *</label>
+                    <p-inputNumber
+                        id="importe"
+                        [(ngModel)]="formData.importe"
+                        mode="currency"
+                        currency="EUR"
+                        locale="es-ES"
+                        [min]="0"
+                        placeholder="0,00 €"
+                        inputStyleClass="text-right font-bold text-xl text-green-600"
+                        class="w-full"
+                        styleClass="w-full"
+                    />
+                    @if (submitted() && !formData.importe) {
+                        <small class="text-red-500 block mt-1">Requerido.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label for="fechaEjecucion" class="font-semibold text-gray-700 block mb-2">Fecha de Ejecución *</label>
+                    <p-datePicker [(ngModel)]="formData.fechaEjecucion" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" class="w-full" />
+                    @if (!formData.fechaEjecucion) {
+                        <small class="text-gray-500">Fecha en la que se generará el movimiento.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 mt-4">
+                    <h5 class="text-xs font-bold text-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-2">Configuración de Recurrencia</h5>
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Frecuencia *</label>
+                    <p-select
+                        [options]="frecuencias"
+                        [(ngModel)]="formData.frecuencia"
+                        placeholder="Selecciona frecuencia"
+                        class="w-full"
+                        styleClass="w-full"
+                        [showClear]="true">
+                    </p-select>
+                    @if (submitted() && !formData.frecuencia) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label for="activo" class="font-medium text-gray-700 block mb-2 text-sm">Estado</label>
+                    <div class="flex items-center gap-2 h-10">
+                        <p-toggleswitch [(ngModel)]="formData.activo" inputId="activo"></p-toggleswitch>
+                        <label for="activo" class="text-sm font-medium text-gray-700 cursor-pointer">{{ formData.activo ? 'Activo' : 'Inactivo' }}</label>
                     </div>
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1 border-blue-100 border">
-                    <div class="flex justify-between items-center mb-4 border-bottom-1 surface-border pb-2">
-                        <h3 class="text-xs font-bold text-blue-600 uppercase tracking-wider m-0">Configuración de Recurrencia</h3>
-                        
-                        <div class="flex items-center gap-2">
-                            <label for="activo" class="text-sm font-medium text-gray-700 cursor-pointer">Activo</label>
-                            <p-toggleswitch [(ngModel)]="formData.activo" inputId="activo"></p-toggleswitch>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="field col-span-2">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Frecuencia *</label>
-                            <p-select
-                                [options]="frecuencias" 
-                                [(ngModel)]="formData.frecuencia" 
-                                placeholder="Selecciona frecuencia" 
-                                class="w-full"
-                                [showClear]="true">
-                            </p-select>
-                            @if (submitted() && !formData.frecuencia) {
-                                <small class="text-red-500 block mt-1">Requerida.</small>
-                            }
-                        </div>
+                <div class="col-span-12 mt-4">
+                    <h5 class="text-xs font-bold text-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-2">Clasificación Financiera</h5>
+                </div>
 
-                        <div class="field col-span-2">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Fecha de Ejecución *</label>
-                            <p-datePicker 
-                                [(ngModel)]="formData.fechaEjecucion" 
-                                dateFormat="dd/mm/yy" 
-                                [showIcon]="true" 
-                                appendTo="body" 
-                                styleClass="w-full" 
-                                placeholder="Seleccione la fecha"
-                            />
-                            <small class="text-gray-500">Fecha en la que se generará el movimiento.</small>
-                        </div>
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Categoría</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedCategoria"
+                            [suggestions]="filteredCategorias()"
+                            (completeMethod)="searchCategorias($event)"
+                            [showClear]="true"
+                            (onClear)="onCategoriaClear()"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Seleccionar..."
+                            [forceSelection]="false"
+                            (onSelect)="onCategoriaSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateCategoria()"></button>
                     </div>
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <h3 class="text-xs font-bold text-500 uppercase tracking-wider mb-4 border-bottom-1 surface-border pb-2">Clasificación Financiera</h3>
-                    
-                    <div class="flex flex-col gap-4">
-                        <div class="field">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Categoría</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedCategoria"
-                                    [suggestions]="filteredCategorias()"
-                                    (completeMethod)="searchCategorias($event)"
-                                    [showClear]="true"
-                                    (onClear)="onCategoriaClear()"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    placeholder="Seleccionar categoría..."
-                                    [forceSelection]="false"
-                                    (onSelect)="onCategoriaSelect($event)"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateCategoria()"></button>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="field">
-                                <label class="font-medium text-gray-700 block mb-2 text-sm">Cuenta *</label>
-                                <div class="p-inputgroup">
-                                    <p-autoComplete
-                                        [(ngModel)]="selectedCuenta"
-                                        [suggestions]="filteredCuentas()"
-                                        (completeMethod)="searchCuentas($event)"
-                                        optionLabel="nombre"
-                                        [dropdown]="true"
-                                        placeholder="Seleccionar..."
-                                        [forceSelection]="true"
-                                        (onSelect)="onCuentaSelect($event)"
-                                    />
-                                    <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateCuenta()"></button>
-                                </div>
-                                @if (submitted() && !selectedCuenta) {
-                                    <small class="text-red-500 block mt-1">Requerida.</small>
-                                }
-                            </div>
-
-                            <div class="field">
-                                <label class="font-medium text-gray-700 block mb-2 text-sm">Forma de Pago *</label>
-                                <div class="p-inputgroup">
-                                    <p-autoComplete
-                                        [(ngModel)]="selectedFormaPago"
-                                        [suggestions]="filteredFormasPago()"
-                                        (completeMethod)="searchFormasPago($event)"
-                                        optionLabel="nombre"
-                                        [dropdown]="true"
-                                        placeholder="Seleccionar..."
-                                        [forceSelection]="true"
-                                        (onSelect)="onFormaPagoSelect($event)"
-                                    />
-                                    <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateFormaPago()"></button>
-                                </div>
-                                @if (submitted() && !selectedFormaPago) {
-                                    <small class="text-red-500 block mt-1">Requerida.</small>
-                                }
-                            </div>
-                        </div>
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Forma de Pago *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedFormaPago"
+                            [suggestions]="filteredFormasPago()"
+                            (completeMethod)="searchFormasPago($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Seleccionar..."
+                            [forceSelection]="true"
+                            (onSelect)="onFormaPagoSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateFormaPago()"></button>
                     </div>
+                    @if (submitted() && !selectedFormaPago) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <h3 class="text-xs font-bold text-500 uppercase tracking-wider mb-4 border-bottom-1 surface-border pb-2">Terceros</h3>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="field">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Cliente *</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedCliente"
-                                    [suggestions]="filteredClientes()"
-                                    (completeMethod)="searchClientes($event)"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    placeholder="Buscar cliente..."
-                                    [forceSelection]="false"
-                                    (onSelect)="onClienteSelect($event)"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateCliente()"></button>
-                            </div>
-                            @if (submitted() && !selectedCliente) {
-                                <small class="text-red-500 block mt-1">Requerido.</small>
-                            }
-                        </div>
-
-                        <div class="field">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Persona *</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedPersona"
-                                    [suggestions]="filteredPersonas()"
-                                    (completeMethod)="searchPersonas($event)"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    placeholder="Buscar persona..."
-                                    [forceSelection]="false"
-                                    (onSelect)="onPersonaSelect($event)"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreatePersona()"></button>
-                            </div>
-                            @if (submitted() && !selectedPersona) {
-                                <small class="text-red-500 block mt-1">Requerida.</small>
-                            }
-                        </div>
+                <div class="col-span-12 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Cuenta de Destino *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedCuenta"
+                            [suggestions]="filteredCuentas()"
+                            (completeMethod)="searchCuentas($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Seleccionar cuenta bancaria / caja..."
+                            [forceSelection]="true"
+                            (onSelect)="onCuentaSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateCuenta()"></button>
                     </div>
+                    @if (submitted() && !selectedCuenta) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <div class="field">
-                        <label for="descripcion" class="font-semibold text-gray-700 block mb-2">Descripción / Notas</label>
-                        <textarea id="descripcion" pTextarea [(ngModel)]="formData.descripcion" rows="3" class="w-full" placeholder="Añadir detalles adicionales..."></textarea>
-                    </div>
+                <div class="col-span-12 mt-4">
+                    <h5 class="text-xs font-bold text-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-2">Terceros</h5>
                 </div>
 
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Cliente *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedCliente"
+                            [suggestions]="filteredClientes()"
+                            (completeMethod)="searchClientes($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Buscar cliente..."
+                            [forceSelection]="false"
+                            (onSelect)="onClienteSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateCliente()"></button>
+                    </div>
+                    @if (submitted() && !selectedCliente) {
+                        <small class="text-red-500 block mt-1">Requerido.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Persona *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedPersona"
+                            [suggestions]="filteredPersonas()"
+                            (completeMethod)="searchPersonas($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Buscar persona..."
+                            [forceSelection]="false"
+                            (onSelect)="onPersonaSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreatePersona()"></button>
+                    </div>
+                    @if (submitted() && !selectedPersona) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 field">
+                    <label for="descripcion" class="font-medium text-gray-700 block mb-2 text-sm">Descripción / Notas</label>
+                    <textarea id="descripcion" pTextarea [(ngModel)]="formData.descripcion" rows="3" class="w-full" placeholder="Añadir detalles adicionales..."></textarea>
+                </div>
             </div>
 
             <ng-template pTemplate="footer">
-                <div class="flex justify-end gap-2 p-3 surface-border border-top-1">
-                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="onCancel()" />
-                    <p-button label="Guardar Programación" icon="pi pi-check" (onClick)="onSave()" />
+                <div class="flex justify-end gap-2 border-top-1 surface-border pt-3">
+                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" [rounded]="true" severity="secondary" (onClick)="onCancel()" />
+                    <p-button label="{{ isEditMode() ? 'Actualizar' : 'Guardar' }}" icon="pi pi-check" [rounded]="true" severity="primary" (onClick)="onSave()" />
                 </div>
             </ng-template>
         </p-drawer>

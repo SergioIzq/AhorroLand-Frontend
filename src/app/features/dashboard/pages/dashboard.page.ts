@@ -6,12 +6,13 @@ import { DashboardStore } from '../stores/dashboard.store';
 import { AuthStore } from '../../../core/stores/auth.store';
 import { GastosChartComponent } from '../components/gastos-chart/gastos-chart.component';
 import { IngresosChartComponent } from '../components/ingresos-chart/ingresos-chart.component';
+import { ResumenFinancieroComponent } from '../components/resumen-financiero/resumen-financiero.component';
 import { BasePageComponent, BasePageTemplateComponent } from '@/shared/components';
 
 @Component({
     selector: 'app-dashboard-page',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule, GastosChartComponent, IngresosChartComponent, BasePageTemplateComponent],
+    imports: [CommonModule, RouterModule, ButtonModule, GastosChartComponent, IngresosChartComponent, ResumenFinancieroComponent, BasePageTemplateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <app-base-page-template [loading]="dashboardStore.loading()" [skeletonType]="'card'">
@@ -232,13 +233,21 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
             </div>
 
             <!-- Charts y Comparativa -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <app-gastos-chart />
+            <div class="grid grid-cols-1 gap-4 mb-4">
+                <!-- Histórico 6 meses -->
+                <div class="w-full">
+                    <app-resumen-financiero />
                 </div>
-
-                <div>
-                    <app-ingresos-chart />
+                
+                <!-- Gastos e Ingresos lado a lado -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="w-full">
+                        <app-gastos-chart />
+                    </div>
+                    
+                    <div class="w-full">
+                        <app-ingresos-chart />
+                    </div>
                 </div>
             </div>
 

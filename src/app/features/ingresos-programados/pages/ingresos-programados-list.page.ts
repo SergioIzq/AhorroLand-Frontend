@@ -20,21 +20,7 @@ import { IngresoProgramadoFormModalComponent } from '../components/ingreso-progr
 @Component({
     selector: 'app-ingresos-programados-list-page',
     standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ButtonModule,
-        InputTextModule,
-        ToastModule,
-        TableModule,
-        ToolbarModule,
-        InputIconModule,
-        IconFieldModule,
-        SkeletonModule,
-        TagModule,
-        BasePageTemplateComponent,
-        IngresoProgramadoFormModalComponent
-    ],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TableModule, ToolbarModule, InputIconModule, IconFieldModule, SkeletonModule, TagModule, BasePageTemplateComponent, IngresoProgramadoFormModalComponent],
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -118,12 +104,7 @@ import { IngresoProgramadoFormModalComponent } from '../components/ingreso-progr
                                 </td>
                                 <td>
                                     <div class="flex gap-2">
-                                        <p-button 
-                                            [icon]="ingreso.activo ? 'pi pi-pause' : 'pi pi-play'"
-                                            [rounded]="true"
-                                            [outlined]="true"
-                                            (click)="toggleActivo(ingreso)"
-                                        />
+                                        <p-button [icon]="ingreso.activo ? 'pi pi-pause' : 'pi pi-play'" [rounded]="true" [outlined]="true" (click)="toggleActivo(ingreso)" />
                                         <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editIngreso(ingreso)" pTooltip="Editar" />
                                         <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteIngreso(ingreso)" pTooltip="Eliminar" />
                                     </div>
@@ -149,11 +130,12 @@ import { IngresoProgramadoFormModalComponent } from '../components/ingreso-progr
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="5" style="padding: 2rem">
+                                <td colspan="8" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay ingresos programados</p>
                                         <p class="text-600 mb-4">Comienza agregando tu primer ingreso programado</p>
+                                        <p-button label="Crear Ingreso Programado" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
@@ -164,12 +146,7 @@ import { IngresoProgramadoFormModalComponent } from '../components/ingreso-progr
         </app-base-page-template>
 
         <!-- Modal de Formulario -->
-        <app-ingreso-programado-form-modal
-            [visible]="ingresoDialog"
-            [ingresoProgramado]="currentIngreso"
-            (save)="saveIngreso($event)"
-            (cancel)="hideDialog()"
-        />
+        <app-ingreso-programado-form-modal [visible]="ingresoDialog" [ingresoProgramado]="currentIngreso" (save)="saveIngreso($event)" (cancel)="hideDialog()" />
     `
 })
 export class IngresosProgramadosListPage extends BasePageComponent {
@@ -202,7 +179,7 @@ export class IngresosProgramadosListPage extends BasePageComponent {
     }
 
     onLazyLoad(event: any) {
-        this.pageNumber = (event.first / event.rows) + 1;
+        this.pageNumber = event.first / event.rows + 1;
         this.pageSize = event.rows;
 
         if (event.sortField) {

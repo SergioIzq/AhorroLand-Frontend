@@ -21,13 +21,7 @@ import { FormaPago } from '@/core/models/forma-pago.model';
 import { Cuenta } from '@/core/models/cuenta.model';
 
 // Componentes de creación rápida
-import { 
-    CategoriaCreateModalComponent, 
-    ProveedorCreateModalComponent, 
-    PersonaCreateModalComponent, 
-    CuentaCreateModalComponent, 
-    FormaPagoCreateModalComponent 
-} from '@/shared/components';
+import { CategoriaCreateModalComponent, ProveedorCreateModalComponent, PersonaCreateModalComponent, CuentaCreateModalComponent, FormaPagoCreateModalComponent } from '@/shared/components';
 import { ConceptoCreateModalComponent } from '@/features/conceptos/components/concepto-create-modal.component';
 
 // Stores
@@ -70,204 +64,187 @@ interface GastoFormData extends Omit<Partial<Gasto>, 'fecha'> {
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <p-drawer 
-            [(visible)]="isVisible" 
-            position="right" 
-            [style]="{ width: '600px', maxWidth: '100vw' }" 
-            [modal]="true" 
-            [blockScroll]="true"
-            (onHide)="onCancel()" 
-            styleClass="p-sidebar-md surface-ground">
-            
+        <p-drawer [(visible)]="isVisible" position="right" [style]="{ width: '600px', maxWidth: '100vw' }" [modal]="true" [blockScroll]="true" (onHide)="onCancel()" styleClass="p-sidebar-md surface-ground">
             <ng-template pTemplate="header">
                 <div class="flex align-items-center gap-2">
                     <span class="font-bold text-xl text-900">{{ isEditMode() ? 'Editar Gasto' : 'Nuevo Gasto' }}</span>
                 </div>
             </ng-template>
 
-            <div class="flex flex-col gap-5 py-2">
-                
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <div class="flex flex-col gap-4">
-                        <div class="field">
-                            <label for="concepto" class="font-semibold text-gray-700 block mb-2">Concepto *</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedConcepto"
-                                    [placeholder]="getConceptoPlaceholder()"
-                                    [suggestions]="filteredConceptos()"
-                                    (completeMethod)="searchConceptos($event)"
-                                    [showClear]="true"
-                                    (onClear)="onConceptoClear()"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    class="flex-1"
-                                    [forceSelection]="true"
-                                    (onSelect)="onConceptoSelect($event)"
-                                    inputStyleClass="font-semibold"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateConcepto()" pTooltip="Crear concepto"></button>
-                            </div>
-                            @if (submitted() && !selectedConcepto) {
-                                <small class="text-red-500 block mt-1">El concepto es requerido.</small>
-                            }
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="field">
-                                <label for="importe" class="font-semibold text-gray-700 block mb-2">Importe *</label>
-                                <p-inputNumber 
-                                    id="importe" 
-                                    [(ngModel)]="formData.importe" 
-                                    mode="currency" 
-                                    currency="EUR" 
-                                    locale="es-ES" 
-                                    [min]="0" 
-                                    placeholder="0,00 €"
-                                    inputStyleClass="text-right font-bold text-xl text-green-600" 
-                                    class="w-full"
-                                />
-                                @if (submitted() && !formData.importe) {
-                                    <small class="text-red-500 block mt-1">Requerido.</small>
-                                }
-                            </div>
-                            <div class="field">
-                                <label for="fecha" class="font-semibold text-gray-700 block mb-2">Fecha *</label>
-                                <p-datePicker 
-                                    [(ngModel)]="formData.fecha" 
-                                    dateFormat="dd/mm/yy" 
-                                    [showIcon]="true" 
-                                    appendTo="body" 
-                                    styleClass="w-full" 
-                                />
-                            </div>
-                        </div>
+            <div class="grid grid-cols-12 gap-4 p-fluid py-2">
+                <div class="col-span-12 field">
+                    <label for="concepto" class="font-semibold text-gray-700 block mb-2">Concepto *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedConcepto"
+                            [placeholder]="getConceptoPlaceholder()"
+                            [suggestions]="filteredConceptos()"
+                            (completeMethod)="searchConceptos($event)"
+                            [showClear]="true"
+                            (onClear)="onConceptoClear()"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                            [forceSelection]="true"
+                            (onSelect)="onConceptoSelect($event)"
+                            inputStyleClass="font-semibold"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateConcepto()" pTooltip="Crear concepto"></button>
                     </div>
+                    @if (submitted() && !selectedConcepto) {
+                        <small class="text-red-500 block mt-1">El concepto es requerido.</small>
+                    }
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <h3 class="text-xs font-bold text-500 uppercase tracking-wider mb-4 border-bottom-1 surface-border pb-2">Clasificación Financiera</h3>
-                    
-                    <div class="flex flex-col gap-4">
-                        <div class="field">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Categoría</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedCategoria"
-                                    [suggestions]="filteredCategorias()"
-                                    (completeMethod)="searchCategorias($event)"
-                                    [showClear]="true"
-                                    (onClear)="onCategoriaClear()"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    placeholder="Seleccionar categoría..."
-                                    [forceSelection]="false"
-                                    (onSelect)="onCategoriaSelect($event)"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateCategoria()"></button>
-                            </div>
-                            @if (submitted() && !selectedCategoria) {
-                                <small class="text-red-500 block mt-1">Requerida.</small>
-                            }
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="field">
-                                <label class="font-medium text-gray-700 block mb-2 text-sm">Cuenta *</label>
-                                <div class="p-inputgroup">
-                                    <p-autoComplete
-                                        [(ngModel)]="selectedCuenta"
-                                        [suggestions]="filteredCuentas()"
-                                        (completeMethod)="searchCuentas($event)"
-                                        optionLabel="nombre"
-                                        [dropdown]="true"
-                                        placeholder="Seleccionar..."
-                                        [forceSelection]="true"
-                                        (onSelect)="onCuentaSelect($event)"
-                                    />
-                                    <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateCuenta()"></button>
-                                </div>
-                                @if (submitted() && !selectedCuenta) {
-                                    <small class="text-red-500 block mt-1">Requerida.</small>
-                                }
-                            </div>
-
-                            <div class="field">
-                                <label class="font-medium text-gray-700 block mb-2 text-sm">Forma de Pago *</label>
-                                <div class="p-inputgroup">
-                                    <p-autoComplete
-                                        [(ngModel)]="selectedFormaPago"
-                                        [suggestions]="filteredFormasPago()"
-                                        (completeMethod)="searchFormasPago($event)"
-                                        optionLabel="nombre"
-                                        [dropdown]="true"
-                                        placeholder="Seleccionar..."
-                                        [forceSelection]="true"
-                                        (onSelect)="onFormaPagoSelect($event)"
-                                    />
-                                    <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateFormaPago()"></button>
-                                </div>
-                                @if (submitted() && !selectedFormaPago) {
-                                    <small class="text-red-500 block mt-1">Requerida.</small>
-                                }
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-span-12 md:col-span-6 field">
+                    <label for="importe" class="font-semibold text-gray-700 block mb-2">Importe *</label>
+                    <p-inputNumber
+                        id="importe"
+                        [(ngModel)]="formData.importe"
+                        mode="currency"
+                        currency="EUR"
+                        locale="es-ES"
+                        [min]="0"
+                        placeholder="0,00 €"
+                        inputStyleClass="text-right font-bold text-xl text-red-600"
+                        class="w-full"
+                        styleClass="w-full"
+                    />
+                    @if (submitted() && !formData.importe) {
+                        <small class="text-red-500 block mt-1">Requerido.</small>
+                    }
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <h3 class="text-xs font-bold text-500 uppercase tracking-wider mb-4 border-bottom-1 surface-border pb-2">Terceros</h3>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="field">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Proveedor *</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedProveedor"
-                                    [suggestions]="filteredProveedores()"
-                                    (completeMethod)="searchProveedores($event)"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    placeholder="Buscar proveedor..."
-                                    [forceSelection]="false"
-                                    (onSelect)="onProveedorSelect($event)"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreateProveedor()"></button>
-                            </div>
-                            @if (submitted() && !selectedProveedor) {
-                                <small class="text-red-500 block mt-1">Requerido.</small>
-                            }
-                        </div>
-
-                        <div class="field">
-                            <label class="font-medium text-gray-700 block mb-2 text-sm">Persona *</label>
-                            <div class="p-inputgroup">
-                                <p-autoComplete
-                                    [(ngModel)]="selectedPersona"
-                                    [suggestions]="filteredPersonas()"
-                                    (completeMethod)="searchPersonas($event)"
-                                    optionLabel="nombre"
-                                    [dropdown]="true"
-                                    placeholder="Buscar persona..."
-                                    [forceSelection]="false"
-                                    (onSelect)="onPersonaSelect($event)"
-                                />
-                                <button pButton icon="pi pi-plus" severity="secondary" (click)="openCreatePersona()"></button>
-                            </div>
-                            @if (submitted() && !selectedPersona) {
-                                <small class="text-red-500 block mt-1">Requerida.</small>
-                            }
-                        </div>
-                    </div>
+                <div class="col-span-12 md:col-span-6 field">
+                    <label for="fecha" class="font-semibold text-gray-700 block mb-2">Fecha *</label>
+                    <p-datePicker [(ngModel)]="formData.fecha" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" class="w-full" />
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1">
-                    <div class="field">
-                        <label for="descripcion" class="font-semibold text-gray-700 block mb-2">Descripción / Notas</label>
-                        <textarea id="descripcion" pTextarea [(ngModel)]="formData.descripcion" rows="3" class="w-full" placeholder="Añadir detalles adicionales..."></textarea>
-                    </div>
+                <div class="col-span-12 mt-4">
+                    <h5 class="text-xs font-bold text-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-2">Clasificación Financiera</h5>
                 </div>
 
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Categoría</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedCategoria"
+                            [suggestions]="filteredCategorias()"
+                            (completeMethod)="searchCategorias($event)"
+                            [showClear]="true"
+                            (onClear)="onCategoriaClear()"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Seleccionar..."
+                            [forceSelection]="false"
+                            (onSelect)="onCategoriaSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateCategoria()"></button>
+                    </div>
+                    @if (submitted() && !selectedCategoria) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Forma de Pago *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedFormaPago"
+                            [suggestions]="filteredFormasPago()"
+                            (completeMethod)="searchFormasPago($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Seleccionar..."
+                            [forceSelection]="true"
+                            (onSelect)="onFormaPagoSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateFormaPago()"></button>
+                    </div>
+                    @if (submitted() && !selectedFormaPago) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Cuenta de Origen *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedCuenta"
+                            [suggestions]="filteredCuentas()"
+                            (completeMethod)="searchCuentas($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Seleccionar cuenta bancaria / caja..."
+                            [forceSelection]="true"
+                            (onSelect)="onCuentaSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateCuenta()"></button>
+                    </div>
+                    @if (submitted() && !selectedCuenta) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 mt-4">
+                    <h5 class="text-xs font-bold text-500 uppercase tracking-wider border-b border-gray-200 pb-2 mb-2">Terceros</h5>
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Proveedor *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedProveedor"
+                            [suggestions]="filteredProveedores()"
+                            (completeMethod)="searchProveedores($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Buscar proveedor..."
+                            [forceSelection]="false"
+                            (onSelect)="onProveedorSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateProveedor()"></button>
+                    </div>
+                    @if (submitted() && !selectedProveedor) {
+                        <small class="text-red-500 block mt-1">Requerido.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label class="font-medium text-gray-700 block mb-2 text-sm">Persona *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedPersona"
+                            [suggestions]="filteredPersonas()"
+                            (completeMethod)="searchPersonas($event)"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Buscar persona..."
+                            [forceSelection]="false"
+                            (onSelect)="onPersonaSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreatePersona()"></button>
+                    </div>
+                    @if (submitted() && !selectedPersona) {
+                        <small class="text-red-500 block mt-1">Requerida.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 field mt-3">
+                    <label for="descripcion" class="font-semibold text-gray-700 block mb-2">Descripción / Notas</label>
+                    <textarea id="descripcion" pTextarea [(ngModel)]="formData.descripcion" rows="3" class="w-full" styleClass="w-full" placeholder="Añadir detalles adicionales..."></textarea>
+                </div>
             </div>
 
             <ng-template pTemplate="footer">
@@ -285,23 +262,29 @@ interface GastoFormData extends Omit<Partial<Gasto>, 'fecha'> {
         <app-forma-pago-create-modal [visible]="showFormaPagoCreateModal" (visibleChange)="showFormaPagoCreateModal = $event" (created)="onFormaPagoCreated($event)" (cancel)="showFormaPagoCreateModal = false" />
         <app-cuenta-create-modal [visible]="showCuentaCreateModal" (visibleChange)="showCuentaCreateModal = $event" (created)="onCuentaCreated($event)" (cancel)="showCuentaCreateModal = false" />
     `,
-    styles: [`
-        :host ::ng-deep {
-            .p-sidebar {
-                background: #f8f9fa; /* Fondo gris claro para el sidebar */
+    styles: [
+        `
+            :host ::ng-deep {
+                .p-sidebar {
+                    background: #ffffff;
+                }
+                .p-autocomplete {
+                    width: 100%;
+                }
+                .p-button.p-button-icon-only.p-button-rounded {
+                    width: 2.5rem;
+                    height: 2.5rem;
+                    flex-shrink: 0;
+                }
+                /* En móvil, el drawer a veces necesita este fix para no salirse */
+                @media screen and (max-width: 768px) {
+                    .p-sidebar {
+                        width: 100% !important;
+                    }
+                }
             }
-            .p-autocomplete {
-                width: 100%;
-            }
-            .p-inputgroup button {
-                flex-shrink: 0;
-            }
-            /* Asegurar que el calendario ocupe todo el ancho */
-            .p-datepicker {
-                width: 100%;
-            }
-        }
-    `]
+        `
+    ]
 })
 export class GastoFormModalComponent {
     private messageService = inject(MessageService);
@@ -402,54 +385,90 @@ export class GastoFormModalComponent {
         const query = event.query;
         const categoriaId = this.selectedCategoria?.id;
         if (!query || query.length < 2) {
-            this.conceptoStore.getRecent(5, categoriaId).then((data) => this.filteredConceptos.set(data)).catch(() => this.filteredConceptos.set([]));
+            this.conceptoStore
+                .getRecent(5, categoriaId)
+                .then((data) => this.filteredConceptos.set(data))
+                .catch(() => this.filteredConceptos.set([]));
         } else {
-            this.conceptoStore.search(query, 10, categoriaId).then((data) => this.filteredConceptos.set(data)).catch(() => this.filteredConceptos.set([]));
+            this.conceptoStore
+                .search(query, 10, categoriaId)
+                .then((data) => this.filteredConceptos.set(data))
+                .catch(() => this.filteredConceptos.set([]));
         }
     }
 
     searchCategorias(event: AutoCompleteCompleteEvent) {
         const query = event.query;
         if (!query || query.length < 2) {
-            this.categoriaStore.getRecent(5).then((data) => this.filteredCategorias.set(data)).catch(() => this.filteredCategorias.set([]));
+            this.categoriaStore
+                .getRecent(5)
+                .then((data) => this.filteredCategorias.set(data))
+                .catch(() => this.filteredCategorias.set([]));
         } else {
-            this.categoriaStore.search(query, 10).then((data) => this.filteredCategorias.set(data)).catch(() => this.filteredCategorias.set([]));
+            this.categoriaStore
+                .search(query, 10)
+                .then((data) => this.filteredCategorias.set(data))
+                .catch(() => this.filteredCategorias.set([]));
         }
     }
 
     searchProveedores(event: AutoCompleteCompleteEvent) {
         const query = event.query;
         if (!query || query.length < 2) {
-            this.proveedorStore.getRecent(5).then((data) => this.filteredProveedores.set(data)).catch(() => this.filteredProveedores.set([]));
+            this.proveedorStore
+                .getRecent(5)
+                .then((data) => this.filteredProveedores.set(data))
+                .catch(() => this.filteredProveedores.set([]));
         } else {
-            this.proveedorStore.search(query, 10).then((data) => this.filteredProveedores.set(data)).catch(() => this.filteredProveedores.set([]));
+            this.proveedorStore
+                .search(query, 10)
+                .then((data) => this.filteredProveedores.set(data))
+                .catch(() => this.filteredProveedores.set([]));
         }
     }
 
     searchPersonas(event: AutoCompleteCompleteEvent) {
         const query = event.query;
         if (!query || query.length < 2) {
-            this.personaStore.getRecent(5).then((data) => this.filteredPersonas.set(data)).catch(() => this.filteredPersonas.set([]));
+            this.personaStore
+                .getRecent(5)
+                .then((data) => this.filteredPersonas.set(data))
+                .catch(() => this.filteredPersonas.set([]));
         } else {
-            this.personaStore.search(query, 10).then((data) => this.filteredPersonas.set(data)).catch(() => this.filteredPersonas.set([]));
+            this.personaStore
+                .search(query, 10)
+                .then((data) => this.filteredPersonas.set(data))
+                .catch(() => this.filteredPersonas.set([]));
         }
     }
 
     searchCuentas(event: AutoCompleteCompleteEvent) {
         const query = event.query;
         if (!query || query.length < 2) {
-            this.cuentaStore.getRecent(5).then((data) => this.filteredCuentas.set(data)).catch(() => this.filteredCuentas.set([]));
+            this.cuentaStore
+                .getRecent(5)
+                .then((data) => this.filteredCuentas.set(data))
+                .catch(() => this.filteredCuentas.set([]));
         } else {
-            this.cuentaStore.search(query, 10).then((data) => this.filteredCuentas.set(data)).catch(() => this.filteredCuentas.set([]));
+            this.cuentaStore
+                .search(query, 10)
+                .then((data) => this.filteredCuentas.set(data))
+                .catch(() => this.filteredCuentas.set([]));
         }
     }
 
     searchFormasPago(event: AutoCompleteCompleteEvent) {
         const query = event.query;
         if (!query || query.length < 2) {
-            this.formaPagoStore.getRecent(5).then((data) => this.filteredFormasPago.set(data)).catch(() => this.filteredFormasPago.set([]));
+            this.formaPagoStore
+                .getRecent(5)
+                .then((data) => this.filteredFormasPago.set(data))
+                .catch(() => this.filteredFormasPago.set([]));
         } else {
-            this.formaPagoStore.search(query, 10).then((data) => this.filteredFormasPago.set(data)).catch(() => this.filteredFormasPago.set([]));
+            this.formaPagoStore
+                .search(query, 10)
+                .then((data) => this.filteredFormasPago.set(data))
+                .catch(() => this.filteredFormasPago.set([]));
         }
     }
 
@@ -458,7 +477,7 @@ export class GastoFormModalComponent {
         let value = event.value;
         this.formData.conceptoId = value.id;
         this.formData.conceptoNombre = value.nombre;
-        
+
         // Auto-asignación de categoría si el concepto la tiene
         if (value.categoriaId && value.categoriaNombre) {
             const categoriaAsociada: CatalogItem = { id: value.categoriaId, nombre: value.categoriaNombre };
@@ -478,25 +497,79 @@ export class GastoFormModalComponent {
         this.formData.conceptoNombre = undefined;
     }
 
-    onProveedorSelect(event: any) { this.formData.proveedorId = event.id; this.formData.proveedorNombre = event.nombre; }
-    onPersonaSelect(event: any) { this.formData.personaId = event.id; this.formData.personaNombre = event.nombre; }
-    onCuentaSelect(event: any) { this.formData.cuentaId = event.id; this.formData.cuentaNombre = event.nombre; }
-    onFormaPagoSelect(event: any) { this.formData.formaPagoId = event.id; this.formData.formaPagoNombre = event.nombre; }
+    onProveedorSelect(event: any) {
+        this.formData.proveedorId = event.id;
+        this.formData.proveedorNombre = event.nombre;
+    }
+    onPersonaSelect(event: any) {
+        this.formData.personaId = event.id;
+        this.formData.personaNombre = event.nombre;
+    }
+    onCuentaSelect(event: any) {
+        this.formData.cuentaId = event.id;
+        this.formData.cuentaNombre = event.nombre;
+    }
+    onFormaPagoSelect(event: any) {
+        this.formData.formaPagoId = event.id;
+        this.formData.formaPagoNombre = event.nombre;
+    }
 
-    onConceptoClear() { this.selectedConcepto = null; this.formData.conceptoId = undefined; this.formData.conceptoNombre = undefined; this.filteredConceptos.set([]); }
-    onCategoriaClear() { this.selectedCategoria = null; this.formData.categoriaId = undefined; this.formData.categoriaNombre = undefined; this.filteredConceptos.set([]); }
-    onProveedorClear() { this.selectedProveedor = null; this.formData.proveedorId = undefined; this.formData.proveedorNombre = undefined; this.filteredProveedores.set([]); }
-    onPersonaClear() { this.selectedPersona = null; this.formData.personaId = undefined; this.formData.personaNombre = undefined; this.filteredPersonas.set([]); }
-    onCuentaClear() { this.selectedCuenta = null; this.formData.cuentaId = undefined; this.formData.cuentaNombre = undefined; this.filteredCuentas.set([]); }
-    onFormaPagoClear() { this.selectedFormaPago = null; this.formData.formaPagoId = undefined; this.formData.formaPagoNombre = undefined; this.filteredFormasPago.set([]); }
+    onConceptoClear() {
+        this.selectedConcepto = null;
+        this.formData.conceptoId = undefined;
+        this.formData.conceptoNombre = undefined;
+        this.filteredConceptos.set([]);
+    }
+    onCategoriaClear() {
+        this.selectedCategoria = null;
+        this.formData.categoriaId = undefined;
+        this.formData.categoriaNombre = undefined;
+        this.filteredConceptos.set([]);
+    }
+    onProveedorClear() {
+        this.selectedProveedor = null;
+        this.formData.proveedorId = undefined;
+        this.formData.proveedorNombre = undefined;
+        this.filteredProveedores.set([]);
+    }
+    onPersonaClear() {
+        this.selectedPersona = null;
+        this.formData.personaId = undefined;
+        this.formData.personaNombre = undefined;
+        this.filteredPersonas.set([]);
+    }
+    onCuentaClear() {
+        this.selectedCuenta = null;
+        this.formData.cuentaId = undefined;
+        this.formData.cuentaNombre = undefined;
+        this.filteredCuentas.set([]);
+    }
+    onFormaPagoClear() {
+        this.selectedFormaPago = null;
+        this.formData.formaPagoId = undefined;
+        this.formData.formaPagoNombre = undefined;
+        this.filteredFormasPago.set([]);
+    }
 
     // --- Apertura de Modales Inline ---
-    openCreateConcepto() { this.showConceptoCreateModal = true; }
-    openCreateCategoria() { this.showCategoriaCreateModal = true; }
-    openCreateProveedor() { this.showProveedorCreateModal = true; }
-    openCreatePersona() { this.showPersonaCreateModal = true; }
-    openCreateFormaPago() { this.showFormaPagoCreateModal = true; }
-    openCreateCuenta() { this.showCuentaCreateModal = true; }
+    openCreateConcepto() {
+        this.showConceptoCreateModal = true;
+    }
+    openCreateCategoria() {
+        this.showCategoriaCreateModal = true;
+    }
+    openCreateProveedor() {
+        this.showProveedorCreateModal = true;
+    }
+    openCreatePersona() {
+        this.showPersonaCreateModal = true;
+    }
+    openCreateFormaPago() {
+        this.showFormaPagoCreateModal = true;
+    }
+    openCreateCuenta() {
+        this.showCuentaCreateModal = true;
+    }
 
     // --- Callbacks de Creación (actualizan autocomplete) ---
     onConceptoCreated(nuevo: Concepto) {
@@ -591,7 +664,10 @@ export class GastoFormModalComponent {
         this.closeModal();
     }
 
-    onCancel() { this.cancel.emit(); this.closeModal(); }
+    onCancel() {
+        this.cancel.emit();
+        this.closeModal();
+    }
 
     private closeModal() {
         this.isVisible = false;

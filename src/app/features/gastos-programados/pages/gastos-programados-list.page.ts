@@ -20,21 +20,7 @@ import { GastoProgramadoFormModalComponent } from '../components/gasto-programad
 @Component({
     selector: 'app-gastos-programados-list-page',
     standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ButtonModule,
-        InputTextModule,
-        ToastModule,
-        TableModule,
-        ToolbarModule,
-        InputIconModule,
-        IconFieldModule,
-        SkeletonModule,
-        TagModule,
-        BasePageTemplateComponent,
-        GastoProgramadoFormModalComponent
-    ],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TableModule, ToolbarModule, InputIconModule, IconFieldModule, SkeletonModule, TagModule, BasePageTemplateComponent, GastoProgramadoFormModalComponent],
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -118,12 +104,7 @@ import { GastoProgramadoFormModalComponent } from '../components/gasto-programad
                                 </td>
                                 <td>
                                     <div class="flex gap-2">
-                                        <p-button 
-                                            [icon]="gasto.activo ? 'pi pi-pause' : 'pi pi-play'"
-                                            [rounded]="true"
-                                            [outlined]="true"
-                                            (click)="toggleActivo(gasto)"
-                                        />
+                                        <p-button [icon]="gasto.activo ? 'pi pi-pause' : 'pi pi-play'" [rounded]="true" [outlined]="true" (click)="toggleActivo(gasto)" />
                                         <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editGasto(gasto)" pTooltip="Editar" />
                                         <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteGasto(gasto)" pTooltip="Eliminar" />
                                     </div>
@@ -149,11 +130,12 @@ import { GastoProgramadoFormModalComponent } from '../components/gasto-programad
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="5" style="padding: 2rem">
+                                <td colspan="8" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay gastos programados</p>
                                         <p class="text-600 mb-4">Comienza agregando tu primer gasto programado</p>
+                                        <p-button label="Crear Gasto Programado" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
@@ -164,12 +146,7 @@ import { GastoProgramadoFormModalComponent } from '../components/gasto-programad
         </app-base-page-template>
 
         <!-- Modal de Formulario -->
-        <app-gasto-programado-form-modal
-            [visible]="gastoDialog"
-            [gastoProgramado]="currentGasto"
-            (save)="saveGasto($event)"
-            (cancel)="hideDialog()"
-        />
+        <app-gasto-programado-form-modal [visible]="gastoDialog" [gastoProgramado]="currentGasto" (save)="saveGasto($event)" (cancel)="hideDialog()" />
     `
 })
 export class GastosProgramadosListPage extends BasePageComponent {
@@ -202,7 +179,7 @@ export class GastosProgramadosListPage extends BasePageComponent {
     }
 
     onLazyLoad(event: any) {
-        this.pageNumber = (event.first / event.rows) + 1;
+        this.pageNumber = event.first / event.rows + 1;
         this.pageSize = event.rows;
 
         if (event.sortField) {

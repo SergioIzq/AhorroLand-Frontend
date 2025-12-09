@@ -21,21 +21,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 @Component({
     selector: 'app-conceptos-list',
     standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ButtonModule,
-        TableModule,
-        InputTextModule,
-        ToastModule,
-        ConfirmDialogModule,
-        SkeletonModule,
-        ToolbarModule,
-        InputIconModule,
-        IconFieldModule,
-        ConceptoCreateModalComponent,
-        BasePageTemplateComponent
-    ],
+    imports: [CommonModule, FormsModule, ButtonModule, TableModule, InputTextModule, ToastModule, ConfirmDialogModule, SkeletonModule, ToolbarModule, InputIconModule, IconFieldModule, ConceptoCreateModalComponent, BasePageTemplateComponent],
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -126,11 +112,12 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="3" style="padding: 2rem">
+                                <td colspan="8" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay conceptos</p>
                                         <p class="text-600 mb-4">Comienza agregando tu primer concepto</p>
+                                        <p-button label="Crear Concepto" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
@@ -138,7 +125,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </p-table>
 
                     <app-concepto-create-modal [visible]="conceptoDialog" (visibleChange)="conceptoDialog = $event" (created)="onConceptoCreated($event)" (cancel)="hideDialog()" />
-
                 </div>
             </div>
         </app-base-page-template>
@@ -176,7 +162,7 @@ export class ConceptosListPage extends BasePageComponent {
     private async loadCategorias() {
         try {
             const categorias = await this.categoriaStore.getRecent(100);
-            categorias.forEach(cat => this.categoriasMap.set(cat.id, cat.nombre));
+            categorias.forEach((cat) => this.categoriasMap.set(cat.id, cat.nombre));
         } catch (error) {
             console.error('Error loading categories:', error);
         }
@@ -187,7 +173,7 @@ export class ConceptosListPage extends BasePageComponent {
     }
 
     onLazyLoad(event: any) {
-        this.pageNumber = (event.first / event.rows) + 1;
+        this.pageNumber = event.first / event.rows + 1;
         this.pageSize = event.rows;
 
         if (event.sortField) {

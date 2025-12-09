@@ -112,7 +112,8 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay proveedores</p>
-                                        <p class="text-600 mb-4">Comienza agregando tu primera proveedor</p>
+                                        <p class="text-600 mb-4">Comienza agregando tu primer proveedor</p>
+                                        <p-button label="Crear Proveedor" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
@@ -120,7 +121,6 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                     </p-table>
 
                     <app-proveedor-form-modal [visible]="proveedorDialog" [proveedor]="currentProveedor" (visibleChange)="proveedorDialog = $event" (save)="onSaveProveedor($event)" (cancel)="hideDialog()" />
-
                 </div>
             </div>
         </app-base-page-template>
@@ -158,7 +158,7 @@ export class ProveedoresListPage extends BasePageComponent {
      * Manejar evento lazy load de la tabla (paginación + sort)
      */
     onLazyLoad(event: any) {
-        this.pageNumber = (event.first / event.rows) + 1;
+        this.pageNumber = event.first / event.rows + 1;
         this.pageSize = event.rows;
 
         // Manejar ordenamiento

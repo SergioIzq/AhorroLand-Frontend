@@ -1,12 +1,13 @@
 import { Component, inject, input, output, effect, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { AutoCompleteModule, AutoCompleteCompleteEvent } from 'primeng/autocomplete';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { Traspaso } from '@/core/models/traspaso.model';
 import { Cuenta } from '@/core/models/cuenta.model';
@@ -28,145 +29,117 @@ interface TraspasoFormData extends Omit<Partial<Traspaso>, 'fecha'> {
     imports: [
         CommonModule,
         FormsModule,
-        DialogModule,
+        DrawerModule,
         ButtonModule,
         InputNumberModule,
         TextareaModule,
         DatePickerModule,
         AutoCompleteModule,
+        TooltipModule,
         CuentaCreateModalComponent
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <p-dialog 
-            [(visible)]="isVisible" 
-            [style]="{ width: '650px' }" 
-            [header]="isEditMode() ? 'Editar Traspaso' : 'Nuevo Traspaso'" 
-            [modal]="true" 
-            [contentStyle]="{ padding: '2rem' }" 
-            (onHide)="onCancel()" 
-            styleClass="p-fluid"
-        >
-            <ng-template #content>
-                <div class="flex flex-col gap-6">
-                    <!-- Cuenta Origen -->
-                    <div>
-                        <label for="cuentaOrigen" class="block font-bold mb-3">Cuenta Origen *</label>
-                        <div class="flex gap-2">
-                            <p-autoComplete
-                                [(ngModel)]="selectedCuentaOrigen"
-                                [suggestions]="filteredCuentasOrigen()"
-                                (completeMethod)="searchCuentasOrigen($event)"
-                                [showClear]="true"
-                                (onClear)="onCuentaOrigenClear()"
-                                optionLabel="nombre"
-                                [dropdown]="true"
-                                placeholder="Buscar o seleccionar cuenta origen"
-                                [forceSelection]="true"
-                                (onSelect)="onCuentaOrigenSelect($event)"
-                                fluid
-                            />
-                            <p-button 
-                                icon="pi pi-plus" 
-                                [rounded]="true" 
-                                severity="secondary" 
-                                [outlined]="true" 
-                                (click)="openCreateCuentaOrigen()" 
-                                pTooltip="Crear nueva cuenta" 
-                            />
-                        </div>
-                        @if (submitted() && !selectedCuentaOrigen) {
-                            <small class="text-red-500"> La cuenta origen es requerida. </small>
-                        }
-                    </div>
-
-                    <!-- Cuenta Destino -->
-                    <div>
-                        <label for="cuentaDestino" class="block font-bold mb-3">Cuenta Destino *</label>
-                        <div class="flex gap-2">
-                            <p-autoComplete
-                                [(ngModel)]="selectedCuentaDestino"
-                                [suggestions]="filteredCuentasDestino()"
-                                (completeMethod)="searchCuentasDestino($event)"
-                                [showClear]="true"
-                                (onClear)="onCuentaDestinoClear()"
-                                optionLabel="nombre"
-                                [dropdown]="true"
-                                placeholder="Buscar o seleccionar cuenta destino"
-                                [forceSelection]="true"
-                                (onSelect)="onCuentaDestinoSelect($event)"
-                                fluid
-                            />
-                            <p-button 
-                                icon="pi pi-plus" 
-                                [rounded]="true" 
-                                severity="secondary" 
-                                [outlined]="true" 
-                                (click)="openCreateCuentaDestino()" 
-                                pTooltip="Crear nueva cuenta" 
-                            />
-                        </div>
-                        @if (submitted() && !selectedCuentaDestino) {
-                            <small class="text-red-500"> La cuenta destino es requerida. </small>
-                        }
-                        @if (submitted() && selectedCuentaOrigen && selectedCuentaDestino && selectedCuentaOrigen.id === selectedCuentaDestino.id) {
-                            <small class="text-red-500"> La cuenta origen y destino deben ser diferentes. </small>
-                        }
-                    </div>
-
-                    <!-- Importe -->
-                    <div>
-                        <label for="importe" class="block font-bold mb-3">Importe *</label>
-                        <p-inputnumber 
-                            id="importe" 
-                            [(ngModel)]="formData.importe" 
-                            mode="currency" 
-                            currency="EUR" 
-                            locale="es-ES" 
-                            [min]="0.01" 
-                            fluid 
-                        />
-                        @if (submitted() && (!formData.importe || formData.importe <= 0)) {
-                            <small class="text-red-500"> El importe es requerido y debe ser mayor a 0. </small>
-                        }
-                    </div>
-
-                    <!-- Fecha -->
-                    <div>
-                        <label for="fecha" class="block font-bold mb-3">Fecha *</label>
-                        <p-datepicker 
-                            [(ngModel)]="formData.fecha" 
-                            dateFormat="dd/mm/yy" 
-                            iconDisplay="input" 
-                            fluid 
-                        />
-                        @if (submitted() && !formData.fecha) {
-                            <small class="text-red-500"> La fecha es requerida. </small>
-                        }
-                    </div>
-
-                    <!-- Descripción -->
-                    <div>
-                        <label for="descripcion" class="block font-bold mb-3">Descripción</label>
-                        <textarea 
-                            id="descripcion" 
-                            pTextarea 
-                            [(ngModel)]="formData.descripcion" 
-                            rows="3" 
-                            placeholder="Descripción opcional del traspaso"
-                            fluid
-                        ></textarea>
-                    </div>
+        <p-drawer [(visible)]="isVisible" position="right" [style]="{ width: '600px', maxWidth: '100vw' }" [modal]="true" [blockScroll]="true" (onHide)="onCancel()" styleClass="p-sidebar-md surface-ground">
+            <ng-template pTemplate="header">
+                <div class="flex align-items-center gap-2">
+                    <span class="font-bold text-xl text-900">{{ isEditMode() ? 'Editar Traspaso' : 'Nuevo Traspaso' }}</span>
                 </div>
             </ng-template>
 
-            <ng-template #footer>
-                <p-button label="Cancelar" icon="pi pi-times" text (click)="onCancel()" />
-                <p-button label="Guardar" icon="pi pi-check" (click)="onSave()" />
-            </ng-template>
-        </p-dialog>
+            <div class="grid grid-cols-12 gap-4 p-fluid py-2">
+                <div class="col-span-12 field">
+                    <label for="cuentaOrigen" class="font-semibold text-gray-700 block mb-2">Cuenta Origen *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedCuentaOrigen"
+                            [suggestions]="filteredCuentasOrigen()"
+                            (completeMethod)="searchCuentasOrigen($event)"
+                            [showClear]="true"
+                            (onClear)="onCuentaOrigenClear()"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Buscar o seleccionar cuenta origen..."
+                            [forceSelection]="true"
+                            (onSelect)="onCuentaOrigenSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateCuentaOrigen()" pTooltip="Crear nueva cuenta"></button>
+                    </div>
+                    @if (submitted() && !selectedCuentaOrigen) {
+                        <small class="text-red-500 block mt-1">La cuenta origen es requerida.</small>
+                    }
+                </div>
 
-        <!-- Modales inline para creación rápida de cuentas -->
+                <div class="col-span-12 field">
+                    <label for="cuentaDestino" class="font-semibold text-gray-700 block mb-2">Cuenta Destino *</label>
+                    <div class="flex align-items-center gap-2">
+                        <p-autoComplete
+                            [(ngModel)]="selectedCuentaDestino"
+                            [suggestions]="filteredCuentasDestino()"
+                            (completeMethod)="searchCuentasDestino($event)"
+                            [showClear]="true"
+                            (onClear)="onCuentaDestinoClear()"
+                            optionLabel="nombre"
+                            [dropdown]="true"
+                            placeholder="Buscar o seleccionar cuenta destino..."
+                            [forceSelection]="true"
+                            (onSelect)="onCuentaDestinoSelect($event)"
+                            class="flex-1 w-full"
+                            styleClass="w-full"
+                        />
+                        <button pButton icon="pi pi-plus" [rounded]="true" [text]="true" severity="primary" (click)="openCreateCuentaDestino()" pTooltip="Crear nueva cuenta"></button>
+                    </div>
+                    @if (submitted() && !selectedCuentaDestino) {
+                        <small class="text-red-500 block mt-1">La cuenta destino es requerida.</small>
+                    }
+                    @if (submitted() && selectedCuentaOrigen && selectedCuentaDestino && selectedCuentaOrigen.id === selectedCuentaDestino.id) {
+                        <small class="text-red-500 block mt-1">La cuenta origen y destino deben ser diferentes.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label for="importe" class="font-semibold text-gray-700 block mb-2">Importe *</label>
+                    <p-inputNumber
+                        id="importe"
+                        [(ngModel)]="formData.importe"
+                        mode="currency"
+                        currency="EUR"
+                        locale="es-ES"
+                        [min]="0.01"
+                        placeholder="0,00 €"
+                        inputStyleClass="text-right font-bold text-xl text-blue-600"
+                        class="w-full"
+                        styleClass="w-full"
+                    />
+                    @if (submitted() && (!formData.importe || formData.importe <= 0)) {
+                        <small class="text-red-500 block mt-1">El importe es requerido y debe ser mayor a 0.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 md:col-span-6 field">
+                    <label for="fecha" class="font-semibold text-gray-700 block mb-2">Fecha *</label>
+                    <p-datePicker [(ngModel)]="formData.fecha" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full" class="w-full" />
+                    @if (submitted() && !formData.fecha) {
+                        <small class="text-red-500 block mt-1">La fecha es requerida.</small>
+                    }
+                </div>
+
+                <div class="col-span-12 field mt-3">
+                    <label for="descripcion" class="font-semibold text-gray-700 block mb-2">Descripción / Notas</label>
+                    <textarea id="descripcion" pTextarea [(ngModel)]="formData.descripcion" rows="3" class="w-full" styleClass="w-full" placeholder="Descripción opcional del traspaso..."></textarea>
+                </div>
+            </div>
+
+            <ng-template pTemplate="footer">
+                <div class="flex justify-end gap-2 p-3 surface-border border-top-1">
+                    <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="onCancel()" />
+                    <p-button label="Guardar Traspaso" icon="pi pi-check" (onClick)="onSave()" />
+                </div>
+            </ng-template>
+        </p-drawer>
+
         <app-cuenta-create-modal 
             [visible]="showCuentaCreateModal" 
             (visibleChange)="showCuentaCreateModal = $event" 
@@ -177,8 +150,16 @@ interface TraspasoFormData extends Omit<Partial<Traspaso>, 'fecha'> {
     styles: [
         `
             :host ::ng-deep {
+                .p-sidebar {
+                    background: #ffffff;
+                }
                 .p-autocomplete {
                     width: 100%;
+                }
+                .p-button.p-button-icon-only.p-button-rounded {
+                    width: 2.5rem;
+                    height: 2.5rem;
+                    flex-shrink: 0;
                 }
             }
         `

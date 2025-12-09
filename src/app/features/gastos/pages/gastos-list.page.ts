@@ -152,11 +152,12 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="7" style="padding: 2rem">
+                                <td colspan="8" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay gastos</p>
                                         <p class="text-600 mb-4">Comienza agregando tu primer gasto</p>
+                                        <p-button label="Crear Gasto" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
@@ -164,13 +165,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </p-table>
 
                     <!-- Nuevo componente de formulario modal con autocomplete -->
-                    <app-gasto-form-modal 
-                        [visible]="gastoDialog()" 
-                        [gasto]="currentGasto()" 
-                        (visibleChange)="gastoDialog.set($event)" 
-                        (save)="onSaveGasto($event)" 
-                        (cancel)="hideDialog()" 
-                    />
+                    <app-gasto-form-modal [visible]="gastoDialog()" [gasto]="currentGasto()" (visibleChange)="gastoDialog.set($event)" (save)="onSaveGasto($event)" (cancel)="hideDialog()" />
                 </div>
             </div>
         </app-base-page-template>
@@ -194,7 +189,7 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
     searchTerm = signal('');
     sortColumn = signal('fecha');
     sortOrder = signal('desc');
-    
+
     // Computed signal para total records
     totalRecords = computed(() => this.gastosStore.totalRecords());
 
@@ -203,14 +198,14 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
 
     constructor() {
         super();
-        
+
         // Configurar búsqueda con debounce de 500ms
         this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe((searchValue) => {
             this.searchTerm.set(searchValue);
             this.pageNumber.set(1);
             this.reloadGastos();
         });
-        
+
         // Effect para sincronización automática cuando cambian los datos
         effect(() => {
             const lastUpdated = this.gastosStore.lastUpdated();
@@ -240,7 +235,7 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
         if (bypassCache) {
             params['timestamp'] = Date.now();
         }
-        
+
         console.log('[GASTOS] Reloading con params:', params);
         this.gastosStore.loadGastosPaginated(params);
     }
@@ -282,7 +277,7 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
 
     async onSaveGasto(gasto: Partial<Gasto>) {
         const gastoActual = this.currentGasto();
-        
+
         if (gastoActual.id) {
             try {
                 await this.gastosStore.updateGasto({ id: gastoActual.id, gasto });
@@ -313,7 +308,7 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
             } catch (error: any) {
                 this.showError(error.userMessage || 'Error al crear el gasto');
             }
-            
+
             this.gastoDialog.set(false);
             this.currentGasto.set({});
         }
@@ -343,9 +338,7 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
         this.confirmAction(
             '¿Estás seguro de eliminar los gastos seleccionados?',
             async () => {
-                const deletePromises = this.selectedGastos().map((gasto) => 
-                    this.gastosStore.deleteGasto(gasto.id)
-                );
+                const deletePromises = this.selectedGastos().map((gasto) => this.gastosStore.deleteGasto(gasto.id));
 
                 await Promise.all(deletePromises);
                 this.selectedGastos.set([]);

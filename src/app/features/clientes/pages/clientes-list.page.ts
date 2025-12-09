@@ -108,11 +108,12 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="4" style="padding: 2rem">
+                                <td colspan="8" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay clientes</p>
                                         <p class="text-600 mb-4">Comienza agregando tu primera cliente</p>
+                                        <p-button label="Crear Cliente" icon="pi pi-plus" (onClick)="openNew()" />
                                     </div>
                                 </td>
                             </tr>
@@ -120,7 +121,6 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                     </p-table>
 
                     <app-cliente-form-modal [visible]="clienteDialog" [cliente]="currentCliente" (visibleChange)="clienteDialog = $event" (save)="onSaveCliente($event)" (cancel)="hideDialog()" />
-
                 </div>
             </div>
         </app-base-page-template>
@@ -158,7 +158,7 @@ export class ClientesListPage extends BasePageComponent {
      * Manejar evento lazy load de la tabla (paginación + sort)
      */
     onLazyLoad(event: any) {
-        this.pageNumber = (event.first / event.rows) + 1;
+        this.pageNumber = event.first / event.rows + 1;
         this.pageSize = event.rows;
 
         // Manejar ordenamiento
