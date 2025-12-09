@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal, ViewChild, OnDestroy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, ViewChild, OnDestroy, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -30,7 +30,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     <p-toolbar class="mb-6 gap-2 p-6">
                         <ng-template #start>
                             <p-button label="Nuevo Gasto" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
-                            <p-button severity="secondary" label="Eliminar" icon="pi pi-trash" outlined (onClick)="deleteSelectedGastos()" [disabled]="!selectedGastos || !selectedGastos.length" />
+                            <p-button severity="secondary" label="Eliminar" icon="pi pi-trash" outlined (onClick)="deleteSelectedGastos()" [disabled]="!selectedGastos() || selectedGastos().length === 0" />
                         </ng-template>
 
                         <ng-template #end>
@@ -44,8 +44,8 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         [value]="gastosStore.gastos()"
                         [lazy]="true"
                         (onLazyLoad)="loadGastosLazy($event)"
-                        [rows]="pageSize"
-                        [totalRecords]="totalRecords"
+                        [rows]="pageSize()"
+                        [totalRecords]="totalRecords()"
                         [paginator]="true"
                         [loading]="gastosStore.loading()"
                         [loadingIcon]="'none'"
@@ -164,7 +164,13 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </p-table>
 
                     <!-- Nuevo componente de formulario modal con autocomplete -->
-                    <app-gasto-form-modal [visible]="gastoDialog" [gasto]="currentGasto" (visibleChange)="gastoDialog = $event" (save)="onSaveGasto($event)" (cancel)="hideDialog()" />
+                    <app-gasto-form-modal 
+                        [visible]="gastoDialog()" 
+                        [gasto]="currentGasto()" 
+                        (visibleChange)="gastoDialog.set($event)" 
+                        (save)="onSaveGasto($event)" 
+                        (cancel)="hideDialog()" 
+                    />
                 </div>
             </div>
         </app-base-page-template>
@@ -178,35 +184,44 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
 
     @ViewChild('dt') dt!: Table;
 
-    gastoDialog: boolean = false;
-    selectedGastos: Gasto[] = [];
-    currentGasto: Partial<Gasto> = {};
+    gastoDialog = signal(false);
+    selectedGastos = signal<Gasto[]>([]);
+    currentGasto = signal<Partial<Gasto>>({});
 
-    pageSize: number = 10;
-    pageNumber: number = 1;
-    searchTerm: string = '';
-    sortColumn: string = 'fecha';
-    sortOrder: string = 'desc';
+    // Signals para paginación y filtros
+    pageSize = signal(10);
+    pageNumber = signal(1);
+    searchTerm = signal('');
+    sortColumn = signal('fecha');
+    sortOrder = signal('desc');
+    
+    // Computed signal para total records
+    totalRecords = computed(() => this.gastosStore.totalRecords());
 
     // Subject para manejar búsqueda con debounce
     private searchSubject = new Subject<string>();
 
     constructor() {
         super();
+        
         // Configurar búsqueda con debounce de 500ms
         this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe((searchValue) => {
-            this.searchTerm = searchValue;
-            this.pageNumber = 1; // Resetear a primera página en búsqueda
+            this.searchTerm.set(searchValue);
+            this.pageNumber.set(1);
             this.reloadGastos();
+        });
+        
+        // Effect para sincronización automática cuando cambian los datos
+        effect(() => {
+            const lastUpdated = this.gastosStore.lastUpdated();
+            if (lastUpdated) {
+                console.log('[GASTOS] Datos sincronizados instantáneamente:', new Date(lastUpdated));
+            }
         });
     }
 
     ngOnDestroy() {
         this.searchSubject.complete();
-    }
-
-    get totalRecords(): number {
-        return this.gastosStore.totalRecords();
     }
 
     /**
@@ -215,18 +230,18 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
      */
     private reloadGastos(bypassCache: boolean = false) {
         const params: any = {
-            page: this.pageNumber,
-            pageSize: this.pageSize,
-            searchTerm: this.searchTerm || undefined,
-            sortColumn: this.sortColumn || undefined,
-            sortOrder: this.sortOrder || undefined
+            page: this.pageNumber(),
+            pageSize: this.pageSize(),
+            searchTerm: this.searchTerm() || undefined,
+            sortColumn: this.sortColumn() || undefined,
+            sortOrder: this.sortOrder() || undefined
         };
 
-        // Si pedimos evitar caché (ej: tras un delete), añadimos un timestamp
         if (bypassCache) {
-            params['timestamp'] = new Date().getTime();
+            params['timestamp'] = Date.now();
         }
-console.log('Reloading gastos with params:', params);
+        
+        console.log('[GASTOS] Reloading con params:', params);
         this.gastosStore.loadGastosPaginated(params);
     }
 
@@ -234,57 +249,52 @@ console.log('Reloading gastos with params:', params);
      * Refrescar la tabla manualmente
      */
     refreshTable() {
-        this.reloadGastos();
+        this.reloadGastos(true);
         this.showInfo('Datos actualizados', 'Actualización');
     }
 
     loadGastosLazy(event: any) {
-        // Calcular página actual (PrimeNG usa first que es el índice del primer registro)
-        this.pageNumber = Math.floor(event.first / event.rows) + 1;
-        this.pageSize = event.rows;
+        this.pageNumber.set(Math.floor(event.first / event.rows) + 1);
+        this.pageSize.set(event.rows);
 
-        // Capturar ordenamiento si existe
         if (event.sortField) {
-            this.sortColumn = event.sortField;
-            // event.sortOrder: 1 = ASC, -1 = DESC
-            this.sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
+            this.sortColumn.set(event.sortField);
+            this.sortOrder.set(event.sortOrder === 1 ? 'asc' : 'desc');
         }
 
-        // Cargar gastos
         this.reloadGastos();
     }
 
     onGlobalFilter(table: Table, event: Event) {
         const searchValue = (event.target as HTMLInputElement).value;
-
-        // Usar Subject para aplicar debounce (esperar 500ms después de dejar de escribir)
         this.searchSubject.next(searchValue);
     }
 
     openNew() {
-        this.currentGasto = {};
-        this.gastoDialog = true;
+        this.currentGasto.set({});
+        this.gastoDialog.set(true);
     }
 
     hideDialog() {
-        this.gastoDialog = false;
-        this.currentGasto = {};
+        this.gastoDialog.set(false);
+        this.currentGasto.set({});
     }
 
     async onSaveGasto(gasto: Partial<Gasto>) {
-        if (gasto.id) {
-            // Actualizar gasto existente
+        const gastoActual = this.currentGasto();
+        
+        if (gastoActual.id) {
             try {
-                await this.gastosStore.updateGasto({ id: gasto.id, gasto });
+                await this.gastosStore.updateGasto({ id: gastoActual.id, gasto });
                 this.showSuccess('Gasto actualizado correctamente');
-                this.gastoDialog = false;
-                this.currentGasto = {};
-                this.reloadGastos();
+                this.gastoDialog.set(false);
+                this.currentGasto.set({});
+                // No es necesario reloadGastos() - actualización optimista ya lo hizo
             } catch (error: any) {
                 this.showError(error.userMessage || 'Error al actualizar el gasto');
             }
         } else {
-            var gastoCreate: GastoCreate = {
+            const gastoCreate: GastoCreate = {
                 conceptoId: gasto.conceptoId!,
                 categoriaId: gasto.categoriaId!,
                 proveedorId: gasto.proveedorId!,
@@ -296,18 +306,22 @@ console.log('Reloading gastos with params:', params);
                 cuentaId: gasto.cuentaId!
             };
 
-            this.gastosStore.createGasto(gastoCreate).then(() => {
+            try {
+                await this.gastosStore.createGasto(gastoCreate);
                 this.showSuccess('Gasto creado correctamente');
-                this.reloadGastos();
-            });
-            this.gastoDialog = false;
-            this.currentGasto = {};
+                // No es necesario reloadGastos() - actualización optimista ya lo hizo
+            } catch (error: any) {
+                this.showError(error.userMessage || 'Error al crear el gasto');
+            }
+            
+            this.gastoDialog.set(false);
+            this.currentGasto.set({});
         }
     }
 
     editGasto(gasto: Gasto) {
-        this.currentGasto = { ...gasto };
-        this.gastoDialog = true;
+        this.currentGasto.set({ ...gasto });
+        this.gastoDialog.set(true);
     }
 
     deleteGasto(gasto: Gasto) {
@@ -329,10 +343,12 @@ console.log('Reloading gastos with params:', params);
         this.confirmAction(
             '¿Estás seguro de eliminar los gastos seleccionados?',
             async () => {
-                const deletePromises = this.selectedGastos.map((gasto) => this.gastosStore.deleteGasto(gasto.id));
+                const deletePromises = this.selectedGastos().map((gasto) => 
+                    this.gastosStore.deleteGasto(gasto.id)
+                );
 
                 await Promise.all(deletePromises);
-                this.selectedGastos = [];
+                this.selectedGastos.set([]);
             },
             {
                 header: 'Confirmar',

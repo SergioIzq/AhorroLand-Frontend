@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, ViewChild } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, ViewChild, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -60,7 +60,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         [lazy]="true"
                         (onLazyLoad)="onLazyLoad($event)"
                         [paginator]="true"
-                        [rows]="pageSize"
+                        [rows]="pageSize()"
                         [totalRecords]="categoriaStore.totalRecords()"
                         [showCurrentPageReport]="true"
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} categorías"
@@ -75,7 +75,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                                 <h5 class="m-0 font-semibold text-xl">Gestión de Categorías</h5>
                                 <p-iconfield>
                                     <p-inputicon styleClass="pi pi-search" />
-                                    <input pInputText type="text" [(ngModel)]="searchTerm" (input)="onSearchChange($event)" placeholder="Buscar categorías..." />
+                                    <input pInputText type="text" [ngModel]="searchTerm()" (input)="onSearchChange($event)" placeholder="Buscar categorías..." />
                                 </p-iconfield>
                             </div>
                         </ng-template>
@@ -130,7 +130,13 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         </ng-template>
                     </p-table>
 
-                    <app-categoria-form-modal [visible]="categoriaDialog" [categoria]="currentCategoria" (visibleChange)="categoriaDialog = $event" (save)="onSaveCategoria($event)" (cancel)="hideDialog()" />
+                    <app-categoria-form-modal 
+                        [visible]="categoriaDialog()" 
+                        [categoria]="currentCategoria()" 
+                        (visibleChange)="categoriaDialog.set($event)" 
+                        (save)="onSaveCategoria($event)" 
+                        (cancel)="hideDialog()" 
+                    />
 
                 </div>
             </div>
@@ -145,32 +151,50 @@ export class CategoriasListPage extends BasePageComponent {
 
     @ViewChild('dt') dt!: Table;
 
-    categoriaDialog: boolean = false;
-    currentCategoria: Partial<Categoria> = {};
+    categoriaDialog = signal(false);
+    currentCategoria = signal<Partial<Categoria>>({});
     private searchSubject = new Subject<string>();
 
-    pageSize: number = 10;
-    pageNumber: number = 1;
-    searchTerm: string = '';
-    sortColumn: string = 'nombre';
-    sortOrder: string = 'asc';
+    // Signals para paginación y filtros
+    pageSize = signal(10);
+    pageNumber = signal(1);
+    searchTerm = signal('');
+    sortColumn = signal('nombre');
+    sortOrder = signal('asc');
+    
+    // Computed signal para saber si hay cambios pendientes
+    hasChanges = computed(() => {
+        const lastUpdate = this.categoriaStore.lastUpdated();
+        return lastUpdate !== null;
+    });
 
     constructor() {
         super();
+        
+        // Configurar búsqueda con debounce
         this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe((searchValue) => {
-            this.searchTerm = searchValue;
-            this.pageNumber = 1;
+            this.searchTerm.set(searchValue);
+            this.pageNumber.set(1);
             this.reloadCategorias();
+        });
+        
+        // Effect para sincronización automática cuando cambian los datos
+        effect(() => {
+            const lastUpdated = this.categoriaStore.lastUpdated();
+            if (lastUpdated) {
+                // Los datos se han actualizado, la UI ya se sincronizó automáticamente
+                console.log('[CATEGORIAS] Datos sincronizados:', new Date(lastUpdated));
+            }
         });
     }
 
     onLazyLoad(event: any) {
-        this.pageNumber = (event.first / event.rows) + 1;
-        this.pageSize = event.rows;
+        this.pageNumber.set((event.first / event.rows) + 1);
+        this.pageSize.set(event.rows);
 
         if (event.sortField) {
-            this.sortColumn = event.sortField;
-            this.sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
+            this.sortColumn.set(event.sortField);
+            this.sortOrder.set(event.sortOrder === 1 ? 'asc' : 'desc');
         }
 
         this.reloadCategorias();
@@ -183,11 +207,11 @@ export class CategoriasListPage extends BasePageComponent {
 
     private reloadCategorias() {
         this.categoriaStore.loadCategoriasPaginated({
-            page: this.pageNumber,
-            pageSize: this.pageSize,
-            searchTerm: this.searchTerm || undefined,
-            sortColumn: this.sortColumn || undefined,
-            sortOrder: this.sortOrder || undefined
+            page: this.pageNumber(),
+            pageSize: this.pageSize(),
+            searchTerm: this.searchTerm() || undefined,
+            sortColumn: this.sortColumn() || undefined,
+            sortOrder: this.sortOrder() || undefined
         });
     }
 
@@ -196,28 +220,30 @@ export class CategoriasListPage extends BasePageComponent {
     }
 
     refreshTable() {
-        this.pageNumber = 1;
-        this.searchTerm = '';
+        this.pageNumber.set(1);
+        this.searchTerm.set('');
         this.reloadCategorias();
         this.showInfo('Datos actualizados', 'Actualización');
     }
 
     openNew() {
-        this.currentCategoria = {};
-        this.categoriaDialog = true;
+        this.currentCategoria.set({});
+        this.categoriaDialog.set(true);
     }
 
     hideDialog() {
-        this.categoriaDialog = false;
-        this.currentCategoria = {};
+        this.categoriaDialog.set(false);
+        this.currentCategoria.set({});
     }
 
     async onSaveCategoria(categoria: Partial<Categoria>) {
-        if (categoria.id) {
+        const categoriaData = this.currentCategoria();
+        
+        if (categoriaData.id) {
             try {
-                await this.categoriaStore.update(categoria.id, { nombre: categoria.nombre! });
+                await this.categoriaStore.update(categoriaData.id, { nombre: categoria.nombre! });
                 this.showSuccess('Categoría actualizada correctamente');
-                this.reloadCategorias();
+                // No es necesario reloadCategorias() - actualización optimista ya lo hizo
                 this.hideDialog();
             } catch (error: any) {
                 this.showError(error.message || 'Error al actualizar la categoría');
@@ -226,7 +252,7 @@ export class CategoriasListPage extends BasePageComponent {
             try {
                 await this.categoriaStore.create(categoria.nombre!);
                 this.showSuccess('Categoría creada correctamente');
-                this.reloadCategorias();
+                // No es necesario reloadCategorias() - actualización optimista ya lo hizo
                 this.hideDialog();
             } catch (error: any) {
                 this.showError(error.message || 'Error al crear la categoría');
@@ -235,8 +261,8 @@ export class CategoriasListPage extends BasePageComponent {
     }
 
     editCategoria(categoria: Categoria) {
-        this.currentCategoria = { ...categoria };
-        this.categoriaDialog = true;
+        this.currentCategoria.set({ ...categoria });
+        this.categoriaDialog.set(true);
     }
 
     deleteCategoria(categoria: Categoria) {

@@ -1,5 +1,5 @@
-import { inject } from '@angular/core';
-import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
+import { computed, inject } from '@angular/core';
+import { signalStore, withState, withMethods, patchState, withComputed } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, firstValueFrom } from 'rxjs';
 import { tap, switchMap } from 'rxjs/operators';
@@ -13,28 +13,47 @@ interface ProveedorState {
     totalRecords: number;
     loading: boolean;
     error: string | null;
+    lastUpdated: number | null;
+    searchCache: Map<string, Proveedor[]>;
 }
 
 const initialState: ProveedorState = {
     proveedores: [],
     totalRecords: 0,
     loading: false,
-    error: null
+    error: null,
+    lastUpdated: null,
+    searchCache: new Map()
 };
 
 export const ProveedorStore = signalStore(
     { providedIn: 'root' },
     withState(initialState),
+
+    withComputed((store) => ({
+        totalProveedores: computed(() => store.proveedores().length),
+        hasData: computed(() => store.proveedores().length > 0),
+    })),
+
+    withComputed((store) => ({
+        isSyncing: computed(() => store.loading() && store.hasData())
+    })),
+
     withMethods((store, proveedorService = inject(ProveedorService)) => ({
         async search(query: string, limit: number = 10): Promise<Proveedor[]> {
+            const cacheKey = `${query}_${limit}`;
+            const cached = store.searchCache().get(cacheKey);
+            if (cached) return cached;
+
             patchState(store, { loading: true, error: null });
             try {
                 const response = await firstValueFrom(proveedorService.search(query, limit));
 
-                // Manejar Result<Proveedor[]> - el backend devuelve array directo en value
                 if (response.isSuccess && response.value) {
                     const proveedores = Array.isArray(response.value) ? response.value : (response.value as any).items || [];
-                    patchState(store, { proveedores: proveedores, loading: false });
+                    const newCache = new Map(store.searchCache());
+                    newCache.set(cacheKey, proveedores);
+                    patchState(store, { loading: false, searchCache: newCache, lastUpdated: Date.now() });
                     return proveedores;
                 } else {
                     const errorMsg = response.error?.message || 'Error al buscar proveedores';
@@ -49,17 +68,35 @@ export const ProveedorStore = signalStore(
         },
 
         async create(nombre: string): Promise<string> {
-            patchState(store, { loading: true });
+            const tempId = `temp_${Date.now()}`;
+            const tempProveedor: Proveedor = { id: tempId, nombre, fechaCreacion: new Date(), usuarioId: '' };
+
+            patchState(store, {
+                proveedores: [...store.proveedores(), tempProveedor],
+                loading: true,
+                error: null
+            });
+
             try {
                 const response = await firstValueFrom(proveedorService.create(nombre));
 
                 if (response.isSuccess) {
-                    patchState(store, { loading: false });
+                    const realProveedor: Proveedor = { id: response.value, nombre, fechaCreacion: new Date(), usuarioId: '' };
+                    patchState(store, {
+                        proveedores: store.proveedores().map((p) => (p.id === tempId ? realProveedor : p)),
+                        loading: false,
+                        lastUpdated: Date.now(),
+                        searchCache: new Map()
+                    });
                     return response.value;
                 }
                 throw new Error(response.error?.message || 'Error al crear proveedor');
             } catch (err) {
-                patchState(store, { loading: false });
+                patchState(store, {
+                    proveedores: store.proveedores().filter((p) => p.id !== tempId),
+                    loading: false,
+                    error: (err as Error).message
+                });
                 throw err;
             }
         },
@@ -83,7 +120,9 @@ export const ProveedorStore = signalStore(
                                     proveedores: response.items,
                                     totalRecords: response.totalCount,
                                     loading: false,
-                                    error: null
+                                    error: null,
+                                    lastUpdated: Date.now(),
+                                    searchCache: new Map()
                                 });
                             },
                             error: (error: any) => {
@@ -100,41 +139,78 @@ export const ProveedorStore = signalStore(
         ),
 
         async update(id: string, proveedor: Partial<Proveedor>): Promise<string> {
-            patchState(store, { loading: true });
+            const proveedorAnterior = store.proveedores().find((p) => p.id === id);
+
+            if (proveedorAnterior) {
+                patchState(store, {
+                    proveedores: store.proveedores().map((p) => (p.id === id ? { ...p, ...proveedor } : p)),
+                    loading: true,
+                    error: null
+                });
+            }
+
             try {
                 const response = await firstValueFrom(proveedorService.update(id, proveedor));
 
                 if (response.isSuccess) {
-                    patchState(store, { loading: false });
+                    patchState(store, {
+                        loading: false,
+                        lastUpdated: Date.now(),
+                        searchCache: new Map()
+                    });
                     return response.value;
                 }
                 throw new Error(response.error?.message || 'Error al actualizar proveedor');
             } catch (err) {
-                patchState(store, { loading: false });
+                if (proveedorAnterior) {
+                    patchState(store, {
+                        proveedores: store.proveedores().map((p) => (p.id === id ? proveedorAnterior : p))
+                    });
+                }
+                patchState(store, {
+                    loading: false,
+                    error: (err as Error).message
+                });
                 throw err;
             }
         },
 
         deleteProveedor: rxMethod<string>(
             pipe(
-                // 1. (Opcional) Actualización Optimista Inmediata: Lo borramos de la vista antes de ir al servidor
-                tap((id) => {
+                switchMap((id) => {
+                    // Guardar proveedor para rollback ANTES de eliminarlo
+                    const proveedorEliminado = store.proveedores().find(p => p.id === id);
+                    const totalAnterior = store.totalRecords();
+                    
+                    // Actualización optimista: eliminar inmediatamente
                     patchState(store, (state) => ({
-                        proveedores: state.proveedores.filter((c) => c.id !== id),
-                        totalRecords: state.totalRecords - 1 // Ajustamos el contador visualmente
+                        proveedores: state.proveedores.filter((p) => p.id !== id),
+                        totalRecords: state.totalRecords - 1,
+                        searchCache: new Map()
                     }));
-                }),
-                switchMap((id) =>
-                    proveedorService.delete(id).pipe(
+                    
+                    return proveedorService.delete(id).pipe(
                         tapResponse({
-                            next: () => {},
+                            next: () => {
+                                patchState(store, { lastUpdated: Date.now() });
+                            },
                             error: (err: ErrorResponse) => {
-                                console.error(err);
-                                patchState(store, { error: err.detail || 'Error al eliminar proveedor' });
+                                console.error('[STORE] Error al eliminar proveedor:', err);
+                                
+                                // ROLLBACK: Restaurar proveedor eliminado
+                                if (proveedorEliminado) {
+                                    patchState(store, (state) => ({
+                                        proveedores: [...state.proveedores, proveedorEliminado].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+                                        totalRecords: totalAnterior,
+                                        error: err.detail || 'Error al eliminar proveedor'
+                                    }));
+                                } else {
+                                    patchState(store, { error: err.detail || 'Error al eliminar proveedor' });
+                                }
                             }
                         })
-                    )
-                )
+                    );
+                })
             )
         ),
 

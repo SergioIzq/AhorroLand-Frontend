@@ -26,6 +26,7 @@ export interface ResumenIngresos {
 }
 
 export interface IngresoCreate {
+    tempid?: string;
     importe: number;
     fecha: string;
     descripcion?: string;
