@@ -139,7 +139,7 @@ interface IngresoProgramadoFormData extends Omit<Partial<IngresoProgramado>, 'fe
                     </div>
                 </div>
 
-                <div class="card surface-card p-4 border-round shadow-1 border-blue-100 border-1">
+                <div class="card surface-card p-4 border-round shadow-1 border-blue-100 border">
                     <div class="flex justify-between items-center mb-4 border-bottom-1 surface-border pb-2">
                         <h3 class="text-xs font-bold text-blue-600 uppercase tracking-wider m-0">Configuración de Recurrencia</h3>
                         
