@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal, ViewChild, OnDestroy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, computed, effect, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -56,7 +56,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                             icon="pi pi-trash" 
                             outlined 
                             (onClick)="deleteSelectedIngresos()" 
-                            [disabled]="!selectedIngresos || !selectedIngresos.length" />
+                            [disabled]="!selectedIngresos() || !selectedIngresos().length" />
                     </ng-template>
 
                     <ng-template #end>
@@ -80,15 +80,16 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     [value]="ingresosStore.ingresos()"
                     [lazy]="true"
                     (onLazyLoad)="loadIngresosLazy($event)"
-                    [rows]="pageSize"
-                    [totalRecords]="totalRecords"
+                    [rows]="pageSize()"
+                    [totalRecords]="totalRecords()"
                     [paginator]="true"
                     [loading]="ingresosStore.loading()"
                     [loadingIcon]="'none'"
                     [globalFilterFields]="['conceptoNombre', 'categoriaNombre', 'proveedorNombre', 'descripcion']"
                     [tableStyle]="{ 'min-width': '75rem' }"
                     styleClass="p-datatable-gridlines p-datatable-loading-icon-none"
-                    [(selection)]="selectedIngresos"
+                    [selection]="selectedIngresos()"
+                    (selectionChange)="selectedIngresos.set($event)"
                     [rowHover]="true"
                     dataKey="id"
                     currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ingresos"
@@ -213,9 +214,9 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                 <!-- Nuevo componente de formulario modal con autocomplete -->
                 <app-ingreso-form-modal
-                    [visible]="ingresoDialog"
-                    [ingreso]="currentIngreso"
-                    (visibleChange)="ingresoDialog = $event"
+                    [visible]="ingresoDialog()"
+                    [ingreso]="currentIngreso()"
+                    (visibleChange)="ingresoDialog.set($event)"
                     (save)="onSaveIngreso($event)"
                     (cancel)="hideDialog()"
                 />
@@ -233,15 +234,18 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
 
     @ViewChild('dt') dt!: Table;
 
-    ingresoDialog: boolean = false;
-    selectedIngresos: Ingreso[] = [];
-    currentIngreso: Partial<Ingreso> = {};
+    ingresoDialog = signal<boolean>(false);
+    selectedIngresos = signal<Ingreso[]>([]);
+    currentIngreso = signal<Partial<Ingreso>>({});
     
-    pageSize: number = 10;
-    pageNumber: number = 1;
-    searchTerm: string = '';
-    sortColumn: string = 'fecha';
-    sortOrder: string = 'desc';
+    pageSize = signal<number>(10);
+    pageNumber = signal<number>(1);
+    searchTerm = signal<string>('');
+    sortColumn = signal<string>('fecha');
+    sortOrder = signal<string>('desc');
+    
+    // Computed signal para totalRecords
+    totalRecords = computed(() => this.ingresosStore.totalRecords());
     
     // Subject para manejar búsqueda con debounce
     private searchSubject = new Subject<string>();
@@ -253,9 +257,17 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
             debounceTime(500),
             distinctUntilChanged()
         ).subscribe(searchValue => {
-            this.searchTerm = searchValue;
-            this.pageNumber = 1; // Resetear a primera página en búsqueda
+            this.searchTerm.set(searchValue);
+            this.pageNumber.set(1); // Resetear a primera página en búsqueda
             this.reloadIngresos();
+        });
+
+        // Effect para detectar sincronización automática
+        effect(() => {
+            const lastUpdate = this.ingresosStore.lastUpdated();
+            if (lastUpdate) {
+                console.log('✅ Ingresos sincronizados automáticamente en', new Date(lastUpdate).toISOString());
+            }
         });
     }
     
@@ -263,20 +275,16 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         this.searchSubject.complete();
     }
     
-    get totalRecords(): number {
-        return this.ingresosStore.totalRecords();
-    }
-    
     /**
      * Recargar ingresos con los filtros actuales
      */
     private reloadIngresos() {
         this.ingresosStore.loadIngresosPaginated({ 
-            page: this.pageNumber, 
-            pageSize: this.pageSize,
-            searchTerm: this.searchTerm || undefined,
-            sortColumn: this.sortColumn || undefined,
-            sortOrder: this.sortOrder || undefined
+            page: this.pageNumber(), 
+            pageSize: this.pageSize(),
+            searchTerm: this.searchTerm() || undefined,
+            sortColumn: this.sortColumn() || undefined,
+            sortOrder: this.sortOrder() || undefined
         });
     }
 
@@ -290,14 +298,14 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
 
     loadIngresosLazy(event: any) {
         // Calcular página actual (PrimeNG usa first que es el índice del primer registro)
-        this.pageNumber = Math.floor(event.first / event.rows) + 1;
-        this.pageSize = event.rows;
+        this.pageNumber.set(Math.floor(event.first / event.rows) + 1);
+        this.pageSize.set(event.rows);
         
         // Capturar ordenamiento si existe
         if (event.sortField) {
-            this.sortColumn = event.sortField;
+            this.sortColumn.set(event.sortField);
             // event.sortOrder: 1 = ASC, -1 = DESC
-            this.sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
+            this.sortOrder.set(event.sortOrder === 1 ? 'asc' : 'desc');
         }
         
         // Cargar ingresos
@@ -312,13 +320,13 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
     }
 
     openNew() {
-        this.currentIngreso = {};
-        this.ingresoDialog = true;
+        this.currentIngreso.set({});
+        this.ingresoDialog.set(true);
     }
 
     hideDialog() {
-        this.ingresoDialog = false;
-        this.currentIngreso = {};
+        this.ingresoDialog.set(false);
+        this.currentIngreso.set({});
     }
 
     async onSaveIngreso(ingreso: Partial<Ingreso>) {
@@ -327,9 +335,9 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
             try {
                 await this.ingresosStore.updateIngreso({ id: ingreso.id, ingreso });
                 this.showSuccess('Ingreso actualizado correctamente');
-                this.ingresoDialog = false;
-                this.currentIngreso = {};
-                this.reloadIngresos();
+                this.ingresoDialog.set(false);
+                this.currentIngreso.set({});
+                // No reloadIngresos() - optimistic update already syncs UI
             } catch (error: any) {
                 this.showError(error.userMessage || 'Error al actualizar el ingreso');
             }
@@ -348,16 +356,16 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
 
             this.ingresosStore.createIngreso(ingresoCreate).then(() => {
                 this.showSuccess('Ingreso creado correctamente');
-                this.reloadIngresos();
+                // No reloadIngresos() - optimistic update already syncs UI
             });
-            this.ingresoDialog = false;
-            this.currentIngreso = {};
+            this.ingresoDialog.set(false);
+            this.currentIngreso.set({});
         }
     }
 
     editIngreso(ingreso: Ingreso) {
-        this.currentIngreso = { ...ingreso };
-        this.ingresoDialog = true;
+        this.currentIngreso.set({ ...ingreso });
+        this.ingresoDialog.set(true);
     }
 
     deleteIngreso(ingreso: Ingreso) {
@@ -380,14 +388,14 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
             '¿Estás seguro de eliminar los ingresos seleccionados?',
             async () => {
                 try {
-                    const deletePromises = this.selectedIngresos.map(ingreso => 
+                    const deletePromises = this.selectedIngresos().map(ingreso => 
                         this.ingresosStore.deleteIngreso(ingreso.id)
                     );
                     
                     await Promise.all(deletePromises);
                     this.showSuccess('Ingresos eliminados correctamente');
-                    this.selectedIngresos = [];
-                    this.reloadIngresos();
+                    this.selectedIngresos.set([]);
+                    // No reloadIngresos() - optimistic updates already sync UI
                 } catch (error: any) {
                     this.showError(error.userMessage || 'Error al eliminar algunos ingresos');
                 }

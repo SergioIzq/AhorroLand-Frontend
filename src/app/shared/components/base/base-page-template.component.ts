@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { SkeletonLoaderComponent, SkeletonType } from './skeleton-loader.component';
+import { SkeletonLoaderComponent, SkeletonType } from '../skeleton-loader.component';
 
 /**
  * Template compartido para páginas con Toast, ConfirmDialog y Skeleton Loader
