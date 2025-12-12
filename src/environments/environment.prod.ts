@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://gbackend.sergioizq.es'
+    apiUrl: 'https://ahorrolandbackend.sergioizq.com'
 };
