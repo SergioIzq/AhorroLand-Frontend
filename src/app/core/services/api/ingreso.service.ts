@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { shareReplay, map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { Ingreso, ResumenIngresos, IngresoCreate } from '../../models';
-import { ApiResponse, PaginatedResponse } from '@/core/models/common.model';
+import { PaginatedList, Result } from '@/core/models/common.model';
 
 @Injectable({
     providedIn: 'root'
@@ -25,7 +25,7 @@ export class IngresoService {
         searchTerm?: string,
         sortColumn?: string,
         sortOrder?: string
-    ): Observable<PaginatedResponse<Ingreso>> {
+    ): Observable<PaginatedList<Ingreso>> {
         let params = new HttpParams()
             .set('page', page.toString())
             .set('pageSize', pageSize.toString());
@@ -40,19 +40,19 @@ export class IngresoService {
             params = params.set('sortOrder', sortOrder);
         }
         
-        // API devuelve ApiResponse<PaginatedResponse<Ingreso>>, extraer data
-        return this.http.get<ApiResponse<PaginatedResponse<Ingreso>>>(`${this.apiUrl}/paginated`, { params })
-            .pipe(map(response => response.data));
+        // API devuelve Result<PaginatedList<Ingreso>>, extraer data
+        return this.http.get<Result<PaginatedList<Ingreso>>>(`${this.apiUrl}`, { params })
+            .pipe(map(response => response.value));
     }
 
     /**
      * Obtener todos los ingresos sin paginación (para compatibilidad)
      */
     getAllIngresos(): Observable<Ingreso[]> {
-        return this.http.get<ApiResponse<PaginatedResponse<Ingreso>>>(this.apiUrl, {
+        return this.http.get<Result<PaginatedList<Ingreso>>>(this.apiUrl, {
             params: new HttpParams().set('pageSize', '1000')
         }).pipe(
-            map(response => response.data.items),
+            map(response => response.value.items),
             shareReplay({ bufferSize: 1, refCount: true })
         );
     }
@@ -66,8 +66,8 @@ export class IngresoService {
             .set('fechaFin', fechaFin)
             .set('pageSize', '1000');
         
-        return this.http.get<ApiResponse<PaginatedResponse<Ingreso>>>(`${this.apiUrl}/periodo`, { params }).pipe(
-            map(response => response.data.items),
+        return this.http.get<Result<PaginatedList<Ingreso>>>(`${this.apiUrl}/periodo`, { params }).pipe(
+            map(response => response.value.items),
             shareReplay({ bufferSize: 1, refCount: true })
         );
     }
@@ -102,19 +102,19 @@ export class IngresoService {
     /**
      * Obtener ingreso por ID
      */
-    getById(id: number): Observable<Ingreso> {
-        return this.http.get<ApiResponse<Ingreso>>(`${this.apiUrl}/${id}`)
-            .pipe(map(response => response.data));
+    getById(id: string): Observable<Ingreso> {
+        return this.http.get<Result<Ingreso>>(`${this.apiUrl}/${id}`)
+            .pipe(map(response => response.value));
     }
 
     /**
      * Crear ingreso
      */
-    create(ingreso: IngresoCreate): Observable<Ingreso> {
-        return this.http.post<ApiResponse<Ingreso>>(this.apiUrl, ingreso).pipe(
+    create(ingreso: IngresoCreate): Observable<string> {
+        return this.http.post<Result<string>>(this.apiUrl, ingreso).pipe(
             map(response => {
                 this.invalidateCache();
-                return response.data;
+                return response.value;
             })
         );
     }
@@ -122,11 +122,11 @@ export class IngresoService {
     /**
      * Actualizar ingreso
      */
-    update(id: string, ingreso: Partial<Ingreso>): Observable<Ingreso> {
-        return this.http.put<ApiResponse<Ingreso>>(`${this.apiUrl}/${id}`, ingreso).pipe(
+    update(id: string, ingreso: Partial<Ingreso>): Observable<string> {
+        return this.http.put<Result<string>>(`${this.apiUrl}/${id}`, ingreso).pipe(
             map(response => {
                 this.invalidateCache();
-                return response.data;
+                return response.value;
             })
         );
     }

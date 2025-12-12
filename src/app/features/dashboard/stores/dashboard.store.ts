@@ -1,16 +1,20 @@
-import { computed, inject } from '@angular/core';
+import { computed, inject, effect } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap } from 'rxjs';
 import { tapResponse } from '@ngrx/operators';
 import { DashboardService } from '../../../core/services/api/dashboard.service';
 import { DashboardResumen, HistoricoMensual } from '../../../core/models/dashboard.model';
+import { GastosStore } from '../../gastos/stores/gastos.store';
+import { IngresosStore } from '../../ingresos/stores/ingresos.store';
 
 interface DashboardState {
     resumen: DashboardResumen | null;
     historico: HistoricoMensual[];
     loading: boolean;
     error: string | null;
+    lastUpdated: number | null;
+    autoRefreshEnabled: boolean;
     filtros: {
         fechaInicio?: string;
         fechaFin?: string;
@@ -24,6 +28,8 @@ const initialState: DashboardState = {
     historico: [],
     loading: false,
     error: null,
+    lastUpdated: null,
+    autoRefreshEnabled: true,
     filtros: {}
 };
 
@@ -52,7 +58,11 @@ export const DashboardStore = signalStore(
         diasRestantesMes: computed(() => store.resumen()?.diasRestantesMes ?? 0),
         historicoUltimos6Meses: computed(() => store.resumen()?.historicoUltimos6Meses ?? []),
         alertas: computed(() => store.resumen()?.alertas ?? []),
-        historico: computed(() => store.historico())
+        hasData: computed(() => store.resumen() !== null)
+    })),
+    
+    withComputed((store) => ({
+        isSyncing: computed(() => store.loading() && store.hasData())
     })),
     withMethods((store, dashboardService = inject(DashboardService)) => ({
         loadResumen: rxMethod<void>(
@@ -62,69 +72,105 @@ export const DashboardStore = signalStore(
                     dashboardService.getResumen(store.filtros()).pipe(
                         tapResponse({
                             next: (resumen) => {
-                                patchState(store, { resumen, loading: false });
+                                patchState(store, { 
+                                    resumen, 
+                                    loading: false,
+                                    lastUpdated: Date.now()
+                                });
                             },
                             error: (error: any) => {
-                                patchState(store, { loading: false, error: error?.message || 'Error al cargar el resumen' });
+                                patchState(store, { 
+                                    loading: false, 
+                                    error: error?.message || 'Error al cargar el resumen' 
+                                });
                             }
                         })
                     )
                 )
             )
         ),
-        refresh() {
-            console.log("Refrescando datos del dashboard...");
+        
+        refresh(bypassCache: boolean = true) {
             patchState(store, { loading: true, error: null });
             
-            // Usar bypassCache: true para forzar la petición al servidor
-            const subscription = dashboardService.getResumen(store.filtros(), true).subscribe({
+            const subscription = dashboardService.getResumen(store.filtros(), bypassCache).subscribe({
                 next: (resumen) => {
-                    console.log("Resumen recibido:", resumen);
-                    patchState(store, { resumen, loading: false });
+                    patchState(store, { 
+                        resumen, 
+                        loading: false,
+                        lastUpdated: Date.now()
+                    });
                 },
                 error: (error: any) => {
                     console.error("Error al cargar resumen:", error);
-                    patchState(store, { loading: false, error: error?.message || 'Error al cargar el resumen' });
+                    patchState(store, { 
+                        loading: false, 
+                        error: error?.message || 'Error al cargar el resumen' 
+                    });
                 }
             });
             
             return subscription;
         },
+        
         setFiltros(filtros: DashboardState['filtros']) {
             patchState(store, { filtros, loading: true, error: null });
             dashboardService.getResumen(filtros).subscribe({
                 next: (resumen) => {
-                    patchState(store, { resumen, loading: false });
+                    patchState(store, { 
+                        resumen, 
+                        loading: false,
+                        lastUpdated: Date.now()
+                    });
                 },
                 error: (error: any) => {
-                    patchState(store, { loading: false, error: error?.message || 'Error al cargar el resumen' });
+                    patchState(store, { 
+                        loading: false, 
+                        error: error?.message || 'Error al cargar el resumen' 
+                    });
                 }
             });
         },
-        loadHistorico: rxMethod<number>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap((meses) =>
-                    dashboardService.getHistorico(meses).pipe(
-                        tapResponse({
-                            next: (historico) => {
-                                patchState(store, { historico, loading: false });
-                            },
-                            error: (error: any) => {
-                                patchState(store, { loading: false, error: error?.message || 'Error al cargar el histórico' });
-                            }
-                        })
-                    )
-                )
-            )
-        ),
+        
+        toggleAutoRefresh(enabled: boolean) {
+            patchState(store, { autoRefreshEnabled: enabled });
+        },
+        
         clearError() {
             patchState(store, { error: null });
         }
     })),
     withHooks({
         onInit(store) {
+            // Cargar datos iniciales
             store.refresh();
+            
+            // Inyectar stores de Gastos e Ingresos para sincronización automática
+            const gastosStore = inject(GastosStore);
+            const ingresosStore = inject(IngresosStore);
+            
+            // Effect para refrescar dashboard cuando cambian gastos
+            effect(() => {
+                const gastosUpdated = gastosStore.lastUpdated();
+                const autoRefresh = store.autoRefreshEnabled();
+                
+                if (gastosUpdated && autoRefresh) {
+                    console.log('[DASHBOARD] Detectado cambio en gastos, sincronizando...');
+                    // Pequeño delay para permitir que el backend procese
+                    setTimeout(() => store.refresh(true), 100);
+                }
+            });
+            
+            // Effect para refrescar dashboard cuando cambian ingresos
+            effect(() => {
+                const ingresosUpdated = ingresosStore.lastUpdated();
+                const autoRefresh = store.autoRefreshEnabled();
+                
+                if (ingresosUpdated && autoRefresh) {
+                    console.log('[DASHBOARD] Detectado cambio en ingresos, sincronizando...');
+                    setTimeout(() => store.refresh(true), 100);
+                }
+            });
         }
     })
 );

@@ -27,7 +27,7 @@ export class AppMenu {
                 ]
             },
             {
-                label: 'Finanzas',
+                label: 'Operaciones',
                 icon: 'pi pi-fw pi-wallet',
                 items: [
                     {
@@ -39,6 +39,73 @@ export class AppMenu {
                         label: 'Ingresos',
                         icon: 'pi pi-fw pi-arrow-up',
                         routerLink: ['/ingresos']
+                    },
+                    {
+                        label: 'Traspasos',
+                        icon: 'pi pi-fw pi-sync',
+                        routerLink: ['/traspasos']
+                    }
+                ]
+            },
+            {
+                label: 'Catálogos',
+                icon: 'pi pi-fw pi-database',
+                items: [
+                    {
+                        label: 'Categorías',
+                        icon: 'pi pi-fw pi-tag',
+                        routerLink: ['/categorias']
+                    },
+                    {
+                        label: 'Conceptos',
+                        icon: 'pi pi-fw pi-list',
+                        routerLink: ['/conceptos']
+                    },
+                    {
+                        label: 'Proveedores',
+                        icon: 'pi pi-fw pi-building',
+                        routerLink: ['/proveedores']
+                    },
+                    {
+                        label: 'Clientes',
+                        icon: 'pi pi-fw pi-briefcase',
+                        routerLink: ['/clientes']
+                    },
+                    {
+                        label: 'Personas',
+                        icon: 'pi pi-fw pi-users',
+                        routerLink: ['/personas']
+                    },
+                    {
+                        label: 'Formas de Pago',
+                        icon: 'pi pi-fw pi-money-bill',
+                        routerLink: ['/formas-pago']
+                    },
+                                        {
+                        label: 'Cuentas',
+                        icon: 'pi pi-fw pi-credit-card',
+                        routerLink: ['/cuentas']
+                    },
+                ]
+            },
+            {
+                label: 'Programación',
+                icon: 'pi pi-fw pi-calendar',
+                items: [
+                    {
+                        label: 'Gastos Programados',
+                        icon: 'pi pi-fw pi-calendar-minus',
+                        routerLink: ['/gastos-programados']
+                    },
+                    {
+                        label: 'Ingresos Programados',
+                        icon: 'pi pi-fw pi-calendar-plus',
+                        routerLink: ['/ingresos-programados']
+                    },
+                    {
+                        label: 'Traspasos Programados',
+                        icon: 'pi pi-fw pi-replay',
+                        routerLink: ['/traspasos-programados']
                     }
                 ]
             }

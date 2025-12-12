@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, ViewChild, OnDestroy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, computed, effect, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -6,278 +6,230 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Table, TableModule } from 'primeng/table';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { SkeletonModule } from 'primeng/skeleton';
-import { MessageService, ConfirmationService } from 'primeng/api';
 import { IngresosStore } from '../stores/ingresos.store';
-import { Ingreso } from '@/core/models';
+import { Ingreso, IngresoCreate } from '@/core/models';
 import { IngresoFormModalComponent } from '../components/ingreso-form-modal.component';
-import { BasePageComponent } from '@/shared/components/base-page.component';
-import { IngresoService } from '@/core/services/api/ingreso.service';
+import { BasePageComponent, BasePageTemplateComponent } from '@/shared/components';
 
 @Component({
     selector: 'app-ingresos-list-page',
     standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ButtonModule,
-        InputTextModule,
-        ToastModule,
-        ConfirmDialogModule,
-        TableModule,
-        ToolbarModule,
-        TagModule,
-        InputIconModule,
-        IconFieldModule,
-        SkeletonModule,
-        IngresoFormModalComponent
-    ],
-    providers: [MessageService, ConfirmationService],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TableModule, ToolbarModule, TagModule, InputIconModule, IconFieldModule, SkeletonModule, IngresoFormModalComponent, BasePageTemplateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="card surface-ground px-4 py-5 md:px-6 lg:px-8">
-            <div class="surface-card shadow-2 border-round p-6">
-                <p-toast></p-toast>
+        <app-base-page-template [loading]="ingresosStore.loading() && ingresosStore.ingresos().length === 0" [skeletonType]="'table'">
+            <div class="card surface-ground px-4 py-5 md:px-6 lg:px-8">
+                <div class="surface-card shadow-2 border-round p-6">
+                    <p-toolbar styleClass="mb-6 gap-2 p-6">
+                        <ng-template #start>
+                            <p-button label="Nuevo Ingreso" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
+                        </ng-template>
 
-                <p-toolbar styleClass="mb-6 gap-2 p-6">
-                    <ng-template #start>
-                        <p-button 
-                            label="Nuevo Ingreso" 
-                            icon="pi pi-plus" 
-                            severity="secondary" 
-                            class="mr-2" 
-                            (onClick)="openNew()" />
-                        <p-button 
-                            severity="secondary" 
-                            label="Eliminar" 
-                            icon="pi pi-trash" 
-                            outlined 
-                            (onClick)="deleteSelectedIngresos()" 
-                            [disabled]="!selectedIngresos || !selectedIngresos.length" />
-                    </ng-template>
+                        <ng-template #end>
+                            <p-button icon="pi pi-refresh" severity="secondary" outlined (onClick)="refreshTable()" pTooltip="Actualizar" class="mr-2" />
+                            <p-button label="Exportar" icon="pi pi-upload" severity="secondary" (onClick)="exportCSV()" />
+                        </ng-template>
+                    </p-toolbar>
 
-                    <ng-template #end>
-                        <p-button 
-                            icon="pi pi-refresh" 
-                            severity="secondary" 
-                            outlined
-                            (onClick)="refreshTable()" 
-                            pTooltip="Actualizar" 
-                            class="mr-2" />
-                        <p-button 
-                            label="Exportar" 
-                            icon="pi pi-upload" 
-                            severity="secondary" 
-                            (onClick)="exportCSV()" />
-                    </ng-template>
-                </p-toolbar>
+                    <p-table
+                        #dt
+                        [value]="ingresosStore.ingresos()"
+                        [lazy]="true"
+                        (onLazyLoad)="loadIngresosLazy($event)"
+                        [rows]="pageSize()"
+                        [totalRecords]="totalRecords()"
+                        [paginator]="true"
+                        [loading]="ingresosStore.loading()"
+                        [loadingIcon]="'none'"
+                        [globalFilterFields]="['conceptoNombre', 'categoriaNombre', 'proveedorNombre', 'descripcion']"
+                        [tableStyle]="{ 'min-width': '75rem' }"
+                        styleClass="p-datatable-gridlines p-datatable-loading-icon-none"
+                        [selection]="selectedIngresos()"
+                        (selectionChange)="selectedIngresos.set($event)"
+                        [rowHover]="true"
+                        dataKey="id"
+                        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ingresos"
+                        [showCurrentPageReport]="true"
+                        [rowsPerPageOptions]="[10, 20, 30]"
+                        sortField="fecha"
+                        [sortOrder]="-1"
+                    >
+                        <ng-template #caption>
+                            <div class="flex items-center justify-between py-3 px-4">
+                                <h5 class="m-0 font-semibold text-xl">Gestión de Ingresos</h5>
+                                <p-iconfield>
+                                    <p-inputicon styleClass="pi pi-search" />
+                                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+                                </p-iconfield>
+                            </div>
+                        </ng-template>
 
-                <p-table
-                    #dt
-                    [value]="ingresosStore.ingresos()"
-                    [lazy]="true"
-                    (onLazyLoad)="loadIngresosLazy($event)"
-                    [rows]="pageSize"
-                    [totalRecords]="totalRecords"
-                    [paginator]="true"
-                    [loading]="ingresosStore.loading()"
-                    [loadingIcon]="'none'"
-                    [globalFilterFields]="['conceptoNombre', 'categoriaNombre', 'clienteNombre', 'descripcion']"
-                    [tableStyle]="{ 'min-width': '75rem' }"
-                    styleClass="p-datatable-gridlines p-datatable-loading-icon-none"
-                    [(selection)]="selectedIngresos"
-                    [rowHover]="true"
-                    dataKey="id"
-                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ingresos"
-                    [showCurrentPageReport]="true"
-                    [rowsPerPageOptions]="[10, 20, 30]"
-                    sortField="fecha"
-                    [sortOrder]="-1"
-                >
-                    <ng-template #caption>
-                        <div class="flex items-center justify-between py-3 px-4">
-                            <h5 class="m-0 font-semibold text-xl">Gestión de Ingresos</h5>
-                            <p-iconfield>
-                                <p-inputicon styleClass="pi pi-search" />
-                                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
-                            </p-iconfield>
-                        </div>
-                    </ng-template>
+                        <ng-template #header>
+                            <tr>
+                                <th pSortableColumn="fecha" style="min-width:10rem; padding: 1rem">
+                                    Fecha
+                                    <p-sortIcon field="fecha" />
+                                </th>
+                                <th pSortableColumn="personaNombre" style="min-width:12rem">
+                                    Persona
+                                    <p-sortIcon field="personaNombre" />
+                                </th>
+                                <th pSortableColumn="formaPagoNombre" style="min-width:12rem">
+                                    Forma de Pago
+                                    <p-sortIcon field="formaPagoNombre" />
+                                </th>
+                                <th pSortableColumn="clienteNombre" style="min-width:12rem">
+                                    Cliente
+                                    <p-sortIcon field="clienteNombre" />
+                                </th>
+                                <th pSortableColumn="conceptoNombre" style="min-width:14rem">
+                                    Concepto
+                                    <p-sortIcon field="conceptoNombre" />
+                                </th>
+                                <th pSortableColumn="cuentaNombre" style="min-width:12rem">
+                                    Cuenta
+                                    <p-sortIcon field="cuentaNombre" />
+                                </th>
+                                <th pSortableColumn="importe" style="min-width:10rem">
+                                    Importe
+                                    <p-sortIcon field="importe" />
+                                </th>
+                                <th style="min-width:10rem">Acciones</th>
+                            </tr>
+                        </ng-template>
 
-                    <ng-template #header>
-                        <tr>
-                            <th style="width: 3rem; padding: 1rem">
-                                <p-tableHeaderCheckbox />
-                            </th>
-                            <th pSortableColumn="conceptoNombre" style="min-width:16rem; padding: 1rem">
-                                Concepto
-                                <p-sortIcon field="conceptoNombre" />
-                            </th>
-                            <th pSortableColumn="categoriaNombre" style="min-width:12rem">
-                                Categoría
-                                <p-sortIcon field="categoriaNombre" />
-                            </th>
-                            <th pSortableColumn="clienteNombre" style="min-width:12rem">
-                                Cliente
-                                <p-sortIcon field="clienteNombre" />
-                            </th>
-                            <th pSortableColumn="fecha" style="min-width:10rem">
-                                Fecha
-                                <p-sortIcon field="fecha" />
-                            </th>
-                            <th pSortableColumn="importe" style="min-width:10rem">
-                                Importe
-                                <p-sortIcon field="importe" />
-                            </th>
-                            <th style="min-width:10rem">Acciones</th>
-                        </tr>
-                    </ng-template>
+                        <ng-template #body let-ingreso>
+                            <tr>
+                                <td style="padding: 1rem">{{ ingreso.fecha | date: 'dd/MM/yyyy' }}</td>
+                                <td>{{ ingreso.personaNombre || '-' }}</td>
+                                <td>{{ ingreso.formaPagoNombre || '-' }}</td>
+                                <td>{{ ingreso.clienteNombre || '-' }}</td>
+                                <td style="padding: 1rem">
+                                    <div class="flex flex-col">
+                                        <span class="font-semibold">{{ ingreso.conceptoNombre }}</span>
+                                        @if (ingreso.descripcion) {
+                                            <small class="text-500">{{ ingreso.descripcion }}</small>
+                                        }
+                                    </div>
+                                </td>
+                                <td>{{ ingreso.cuentaNombre || '-' }}</td>
+                                <td>
+                                    <span class="font-bold text-green-500">{{ ingreso.importe | number: '1.2-2' }} €</span>
+                                </td>
+                                <td>
+                                    <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editIngreso(ingreso)" />
+                                    <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteIngreso(ingreso)" />
+                                </td>
+                            </tr>
+                        </ng-template>
 
-                    <ng-template #body let-ingreso>
-                        <tr>
-                            <td style="padding: 1rem">
-                                <p-tableCheckbox [value]="ingreso" />
-                            </td>
-                            <td style="padding: 1rem">
-                                <div class="flex flex-col">
-                                    <span class="font-semibold">{{ ingreso.conceptoNombre }}</span>
-                                    @if (ingreso.descripcion) {
-                                        <small class="text-500">{{ ingreso.descripcion }}</small>
-                                    }
-                                </div>
-                            </td>
-                            <td style="padding: 1rem">
-                                <p-tag 
-                                    [value]="ingreso.categoriaNombre || 'Sin categoría'" 
-                                    [severity]="getCategorySeverity(ingreso.categoriaNombre)" />
-                            </td>
-                            <td>{{ ingreso.clienteNombre || '-' }}</td>
-                            <td>{{ ingreso.fecha | date:'dd/MM/yyyy' }}</td>
-                            <td>
-                                <span class="font-bold text-green-500">{{ ingreso.importe | currency:'EUR':'symbol':'1.2-2' }}</span>
-                            </td>
-                            <td>
-                                <p-button 
-                                    icon="pi pi-pencil" 
-                                    class="mr-2" 
-                                    [rounded]="true" 
-                                    [outlined]="true" 
-                                    (click)="editIngreso(ingreso)" />
-                                <p-button 
-                                    icon="pi pi-trash" 
-                                    severity="danger" 
-                                    [rounded]="true" 
-                                    [outlined]="true" 
-                                    (click)="deleteIngreso(ingreso)" />
-                            </td>
-                        </tr>
-                    </ng-template>
+                        <ng-template #loadingbody>
+                            <tr>
+                                <td style="padding: 1rem"><p-skeleton /></td>
+                                <td style="padding: 1rem"><p-skeleton width="6rem" /></td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td style="padding: 1rem">
+                                    <div class="flex flex-col gap-2">
+                                        <p-skeleton width="80%" />
+                                        <p-skeleton width="60%" height=".8rem" />
+                                    </div>
+                                </td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td><p-skeleton width="5rem" /></td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <p-skeleton shape="circle" size="2.5rem" />
+                                        <p-skeleton shape="circle" size="2.5rem" />
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
 
-                    <ng-template #loadingbody>
-                        <tr>
-                            <td style="padding: 1rem"><p-skeleton /></td>
-                            <td style="padding: 1rem">
-                                <div class="flex flex-col gap-2">
-                                    <p-skeleton width="80%" />
-                                    <p-skeleton width="60%" height=".8rem" />
-                                </div>
-                            </td>
-                            <td style="padding: 1rem"><p-skeleton width="6rem" height="2rem" /></td>
-                            <td><p-skeleton width="70%" /></td>
-                            <td><p-skeleton width="6rem" /></td>
-                            <td><p-skeleton width="5rem" /></td>
-                            <td>
-                                <div class="flex gap-2">
-                                    <p-skeleton shape="circle" size="2.5rem" />
-                                    <p-skeleton shape="circle" size="2.5rem" />
-                                </div>
-                            </td>
-                        </tr>
-                    </ng-template>
+                        <ng-template #emptymessage>
+                            <tr>
+                                <td colspan="10" style="padding: 2rem">
+                                    <div class="text-center py-8">
+                                        <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
+                                        <p class="text-900 font-semibold text-xl mb-2">No hay ingresos</p>
+                                        <p class="text-600 mb-4">Comienza agregando tu primer ingreso</p>
+                                        <p-button label="Crear Ingreso" icon="pi pi-plus" (onClick)="openNew()" />
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
 
-                    <ng-template #emptymessage>
-                        <tr>
-                            <td colspan="7" style="padding: 2rem">
-                                <div class="text-center py-8">
-                                    <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
-                                    <p class="text-900 font-semibold text-xl mb-2">No hay ingresos</p>
-                                    <p class="text-600 mb-4">Comienza agregando tu primer ingreso</p>
-                                </div>
-                            </td>
-                        </tr>
-                    </ng-template>
-                </p-table>
-
-                <!-- Nuevo componente de formulario modal con autocomplete -->
-                <app-ingreso-form-modal
-                    [visible]="ingresoDialog"
-                    [ingreso]="currentIngreso"
-                    (visibleChange)="ingresoDialog = $event"
-                    (save)="onSaveIngreso($event)"
-                    (cancel)="hideDialog()"
-                />
-
-                <p-confirmdialog [style]="{ width: '450px' }" />
+                    <!-- Nuevo componente de formulario modal con autocomplete -->
+                    <app-ingreso-form-modal [visible]="ingresoDialog()" [ingreso]="currentIngreso()" (visibleChange)="ingresoDialog.set($event)" (save)="onSaveIngreso($event)" (cancel)="hideDialog()" />
+                </div>
             </div>
-        </div>
+        </app-base-page-template>
     `
 })
 export class IngresosListPage extends BasePageComponent implements OnDestroy {
-    ingresosStore: InstanceType<typeof IngresosStore> = inject(IngresosStore);
-    private ingresoService = inject(IngresoService);
+    ingresosStore = inject(IngresosStore);
+
+    protected override loadingSignal = this.ingresosStore.loading;
+    protected override skeletonType = 'table' as const;
 
     @ViewChild('dt') dt!: Table;
 
-    ingresoDialog: boolean = false;
-    selectedIngresos: Ingreso[] = [];
-    currentIngreso: Partial<Ingreso> = {};
-    
-    pageSize: number = 10;
-    pageNumber: number = 1;
-    searchTerm: string = '';
-    sortColumn: string = 'fecha';
-    sortOrder: string = 'desc';
-    
+    ingresoDialog = signal<boolean>(false);
+    selectedIngresos = signal<Ingreso[]>([]);
+    currentIngreso = signal<Partial<Ingreso>>({});
+
+    pageSize = signal<number>(10);
+    pageNumber = signal<number>(1);
+    searchTerm = signal<string>('');
+    sortColumn = signal<string>('fecha');
+    sortOrder = signal<string>('desc');
+
+    // Computed signal para totalRecords
+    totalRecords = computed(() => this.ingresosStore.totalRecords());
+
     // Subject para manejar búsqueda con debounce
     private searchSubject = new Subject<string>();
-    
+
     constructor() {
         super();
         // Configurar búsqueda con debounce de 500ms
-        this.searchSubject.pipe(
-            debounceTime(500),
-            distinctUntilChanged()
-        ).subscribe(searchValue => {
-            this.searchTerm = searchValue;
-            this.pageNumber = 1; // Resetear a primera página en búsqueda
+        this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe((searchValue) => {
+            this.searchTerm.set(searchValue);
+            this.pageNumber.set(1); // Resetear a primera página en búsqueda
             this.reloadIngresos();
         });
+
+        // Effect para detectar sincronización automática
+        effect(() => {
+            const lastUpdate = this.ingresosStore.lastUpdated();
+            if (lastUpdate) {
+                console.log('✅ Ingresos sincronizados automáticamente en', new Date(lastUpdate).toISOString());
+            }
+        });
     }
-    
+
     ngOnDestroy() {
         this.searchSubject.complete();
     }
-    
-    get totalRecords(): number {
-        return this.ingresosStore.totalRecords();
-    }
-    
+
     /**
      * Recargar ingresos con los filtros actuales
      */
     private reloadIngresos() {
-        this.ingresosStore.loadIngresosPaginated({ 
-            page: this.pageNumber, 
-            pageSize: this.pageSize,
-            searchTerm: this.searchTerm || undefined,
-            sortColumn: this.sortColumn || undefined,
-            sortOrder: this.sortOrder || undefined
+        this.ingresosStore.loadIngresosPaginated({
+            page: this.pageNumber(),
+            pageSize: this.pageSize(),
+            searchTerm: this.searchTerm() || undefined,
+            sortColumn: this.sortColumn() || undefined,
+            sortOrder: this.sortOrder() || undefined
         });
     }
 
@@ -291,94 +243,96 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
 
     loadIngresosLazy(event: any) {
         // Calcular página actual (PrimeNG usa first que es el índice del primer registro)
-        this.pageNumber = Math.floor(event.first / event.rows) + 1;
-        this.pageSize = event.rows;
-        
+        this.pageNumber.set(Math.floor(event.first / event.rows) + 1);
+        this.pageSize.set(event.rows);
+
         // Capturar ordenamiento si existe
         if (event.sortField) {
-            this.sortColumn = event.sortField;
+            this.sortColumn.set(event.sortField);
             // event.sortOrder: 1 = ASC, -1 = DESC
-            this.sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
+            this.sortOrder.set(event.sortOrder === 1 ? 'asc' : 'desc');
         }
-        
-        console.log('loadIngresosLazy llamado - event:', event);
-        console.log('Calculado:', { 
-            page: this.pageNumber, 
-            pageSize: this.pageSize,
-            sortColumn: this.sortColumn,
-            sortOrder: this.sortOrder,
-            searchTerm: this.searchTerm
-        });
-        
+
         // Cargar ingresos
         this.reloadIngresos();
     }
 
     onGlobalFilter(table: Table, event: Event) {
         const searchValue = (event.target as HTMLInputElement).value;
-        console.log('Input de búsqueda:', searchValue);
-        
+
         // Usar Subject para aplicar debounce (esperar 500ms después de dejar de escribir)
         this.searchSubject.next(searchValue);
     }
 
     openNew() {
-        this.currentIngreso = {};
-        this.ingresoDialog = true;
+        this.currentIngreso.set({});
+        this.ingresoDialog.set(true);
     }
 
     hideDialog() {
-        this.ingresoDialog = false;
-        this.currentIngreso = {};
+        this.ingresoDialog.set(false);
+        this.currentIngreso.set({});
     }
 
     async onSaveIngreso(ingreso: Partial<Ingreso>) {
         if (ingreso.id) {
             // Actualizar ingreso existente
-            await this.executeWithFeedback(
-                this.ingresoService.update(ingreso.id, ingreso),
-                {
-                    successMessage: 'Ingreso actualizado correctamente',
-                    errorMessage: 'Error al actualizar el ingreso',
-                    onSuccess: () => {
-                        this.ingresoDialog = false;
-                        this.currentIngreso = {};
-                        this.reloadIngresos();
-                    }
-                }
-            );
+            try {
+                await this.ingresosStore.updateIngreso({ id: ingreso.id, ingreso });
+                this.showSuccess('Ingreso actualizado correctamente');
+                this.ingresoDialog.set(false);
+                this.currentIngreso.set({});
+                // No reloadIngresos() - optimistic update already syncs UI
+            } catch (error: any) {
+                this.showError(error.userMessage || 'Error al actualizar el ingreso');
+            }
         } else {
-            // TODO: Implementar creación cuando el backend esté listo
-            this.showInfo('La creación de ingresos estará disponible cuando se conecten los endpoints de catálogos', 'Próximamente');
-            this.ingresoDialog = false;
-            this.currentIngreso = {};
+            var ingresoCreate: IngresoCreate = {
+                conceptoId: ingreso.conceptoId!,
+                categoriaId: ingreso.categoriaId!,
+                clienteId: ingreso.clienteId!,
+                fecha: ingreso.fecha!,
+                importe: ingreso.importe!,
+                descripcion: ingreso.descripcion,
+                formaPagoId: ingreso.formaPagoId!,
+                personaId: ingreso.personaId!,
+                cuentaId: ingreso.cuentaId!
+            };
+
+            const displayData: Partial<Ingreso> = {
+                conceptoNombre: ingreso.conceptoNombre,
+                categoriaNombre: ingreso.categoriaNombre,
+                cuentaNombre: ingreso.cuentaNombre,
+                formaPagoNombre: ingreso.formaPagoNombre,
+                clienteNombre: ingreso.clienteNombre,
+                personaNombre: ingreso.personaNombre
+            };
+
+            this.ingresosStore.createIngreso(ingresoCreate, displayData).then(() => {
+                this.showSuccess('Ingreso creado correctamente');
+            });
+            
+            this.ingresoDialog.set(false);
+            this.currentIngreso.set({});
         }
     }
 
     editIngreso(ingreso: Ingreso) {
-        this.currentIngreso = { ...ingreso };
-        this.ingresoDialog = true;
+        this.currentIngreso.set({ ...ingreso });
+        this.ingresoDialog.set(true);
     }
 
     deleteIngreso(ingreso: Ingreso) {
         this.confirmAction(
-            `¿Estás seguro de eliminar el ingreso "${ingreso.conceptoNombre}"?`,
-            async () => {
-                await this.executeWithFeedback(
-                    this.ingresoService.delete(ingreso.id),
-                    {
-                        successMessage: 'Ingreso eliminado correctamente',
-                        errorMessage: 'Error al eliminar el ingreso',
-                        onSuccess: () => {
-                            this.reloadIngresos();
-                        }
-                    }
-                );
+            `¿Estás seguro de eliminar el gasto "${ingreso.conceptoNombre}"?`,
+            () => {
+                this.ingresosStore.deleteIngreso(ingreso.id);
             },
             {
                 header: 'Confirmar eliminación',
                 acceptLabel: 'Sí, eliminar',
-                rejectLabel: 'Cancelar'
+                rejectLabel: 'Cancelar',
+                successMessage: 'Ingreso eliminado correctamente'
             }
         );
     }
@@ -387,21 +341,16 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         this.confirmAction(
             '¿Estás seguro de eliminar los ingresos seleccionados?',
             async () => {
-                const deletePromises = this.selectedIngresos.map(ingreso => 
-                    this.ingresoService.delete(ingreso.id).toPromise()
-                );
-                
-                await this.executeWithFeedback(
-                    Promise.all(deletePromises),
-                    {
-                        successMessage: 'Ingresos eliminados correctamente',
-                        errorMessage: 'Error al eliminar algunos ingresos',
-                        onSuccess: () => {
-                            this.selectedIngresos = [];
-                            this.reloadIngresos();
-                        }
-                    }
-                );
+                try {
+                    const deletePromises = this.selectedIngresos().map((ingreso) => this.ingresosStore.deleteIngreso(ingreso.id));
+
+                    await Promise.all(deletePromises);
+                    this.showSuccess('Ingresos eliminados correctamente');
+                    this.selectedIngresos.set([]);
+                    // No reloadIngresos() - optimistic updates already sync UI
+                } catch (error: any) {
+                    this.showError(error.userMessage || 'Error al eliminar algunos ingresos');
+                }
             },
             {
                 header: 'Confirmar',
@@ -420,21 +369,14 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         }
 
         // Crear CSV manualmente con BOM para UTF-8
-        const headers = ['Concepto', 'Categoría', 'Cliente', 'Fecha', 'Importe', 'Descripción'];
-        const csvData = ingresos.map((i: Ingreso) => [
-            i.conceptoNombre,
-            i.categoriaNombre || '',
-            i.clienteNombre || '',
-            i.fecha,
-            i.importe,
-            i.descripcion || ''
-        ]);
+        const headers = ['Concepto', 'Categoría', 'Proveedor', 'Fecha', 'Importe', 'Descripción'];
+        const csvData = ingresos.map((g) => [g.conceptoNombre, g.categoriaNombre || '', g.clienteNombre || '', g.fecha, g.importe, g.descripcion || '']);
 
         // Agregar BOM (Byte Order Mark) para UTF-8
         let csv = '\uFEFF';
         csv += headers.join(',') + '\n';
-        csvData.forEach((row: any[]) => {
-            csv += row.map((field: any) => `"${field}"`).join(',') + '\n';
+        csvData.forEach((row) => {
+            csv += row.map((field) => `"${field}"`).join(',') + '\n';
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -448,19 +390,22 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         document.body.removeChild(link);
     }
 
-    getCategorySeverity(categoria: string): "success" | "secondary" | "info" | "warn" | "danger" | "contrast" | undefined {
+    getCategorySeverity(categoria: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' | undefined {
         if (!categoria) return 'secondary';
-        
+
         // Generar un hash simple del nombre de categoría para asignar color consistente
-        const severities: Array<"success" | "info" | "warn" | "contrast" | "secondary"> = 
-            ['success', 'info', 'warn', 'contrast', 'secondary'];
-        
+        const severities: Array<'success' | 'info' | 'warn' | 'contrast' | 'secondary'> = ['success', 'info', 'warn', 'contrast', 'secondary'];
+
         let hash = 0;
         for (let i = 0; i < categoria.length; i++) {
             hash = categoria.charCodeAt(i) + ((hash << 5) - hash);
         }
-        
+
         const index = Math.abs(hash) % severities.length;
         return severities[index];
+    }
+
+    selectIngreso(ingreso: Ingreso) {
+        this.ingresosStore.selectIngreso(ingreso);
     }
 }

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { shareReplay, map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { Gasto, ResumenGastos, GastoCreate } from '../../models';
-import { ApiResponse, PaginatedResponse } from '@/core/models/common.model';
+import { PaginatedList, Result } from '@/core/models/common.model';
 
 @Injectable({
     providedIn: 'root'
@@ -12,24 +12,16 @@ import { ApiResponse, PaginatedResponse } from '@/core/models/common.model';
 export class GastoService {
     private readonly http = inject(HttpClient);
     private readonly apiUrl = `${environment.apiUrl}/gastos`;
-    
+
     // Cache para resumen
     private resumenCache$?: Observable<ResumenGastos>;
 
     /**
      * Obtener todos los gastos con paginación, búsqueda y ordenamiento
      */
-    getGastos(
-        page: number = 1, 
-        pageSize: number = 10,
-        searchTerm?: string,
-        sortColumn?: string,
-        sortOrder?: string
-    ): Observable<PaginatedResponse<Gasto>> {
-        let params = new HttpParams()
-            .set('page', page.toString())
-            .set('pageSize', pageSize.toString());
-        
+    getGastos(page: number = 1, pageSize: number = 10, searchTerm?: string, sortColumn?: string, sortOrder?: string, timestamp?: number): Observable<PaginatedList<Gasto>> {
+        let params = new HttpParams().set('page', page.toString()).set('pageSize', pageSize.toString());
+
         if (searchTerm) {
             params = params.set('searchTerm', searchTerm);
         }
@@ -39,35 +31,36 @@ export class GastoService {
         if (sortOrder) {
             params = params.set('sortOrder', sortOrder);
         }
-        
-        // API devuelve ApiResponse<PaginatedResponse<Gasto>>, extraer data
-        return this.http.get<ApiResponse<PaginatedResponse<Gasto>>>(`${this.apiUrl}/paginated`, { params })
-            .pipe(map(response => response.data));
+        if (timestamp) {
+            params = params.set('_t', timestamp.toString());
+        }
+
+        // API devuelve Result<PaginatedList<Gasto>>, extraer data
+        return this.http.get<Result<PaginatedList<Gasto>>>(`${this.apiUrl}`, { params }).pipe(map((response) => response.value));
     }
 
     /**
      * Obtener todos los gastos sin paginación (para compatibilidad)
      */
     getAllGastos(): Observable<Gasto[]> {
-        return this.http.get<ApiResponse<PaginatedResponse<Gasto>>>(this.apiUrl, {
-            params: new HttpParams().set('pageSize', '1000')
-        }).pipe(
-            map(response => response.data.items),
-            shareReplay({ bufferSize: 1, refCount: true })
-        );
+        return this.http
+            .get<Result<PaginatedList<Gasto>>>(this.apiUrl, {
+                params: new HttpParams().set('pageSize', '1000')
+            })
+            .pipe(
+                map((response) => response.value.items),
+                shareReplay({ bufferSize: 1, refCount: true })
+            );
     }
 
     /**
      * Obtener gastos por período
      */
     getGastosPorPeriodo(fechaInicio: string, fechaFin: string): Observable<Gasto[]> {
-        const params = new HttpParams()
-            .set('fechaInicio', fechaInicio)
-            .set('fechaFin', fechaFin)
-            .set('pageSize', '1000');
-        
-        return this.http.get<ApiResponse<PaginatedResponse<Gasto>>>(`${this.apiUrl}/periodo`, { params }).pipe(
-            map(response => response.data.items),
+        const params = new HttpParams().set('fechaInicio', fechaInicio).set('fechaFin', fechaFin).set('pageSize', '1000');
+
+        return this.http.get<Result<PaginatedList<Gasto>>>(`${this.apiUrl}/periodo`, { params }).pipe(
+            map((response) => response.value.items),
             shareReplay({ bufferSize: 1, refCount: true })
         );
     }
@@ -79,16 +72,14 @@ export class GastoService {
         let params = new HttpParams();
         if (fechaInicio) params = params.set('fechaInicio', fechaInicio);
         if (fechaFin) params = params.set('fechaFin', fechaFin);
-        
+
         // Usar cache solo si no hay parámetros de fecha
         if (!fechaInicio && !fechaFin && this.resumenCache$) {
             return this.resumenCache$;
         }
-        
-        this.resumenCache$ = this.http.get<ResumenGastos>(`${this.apiUrl}/resumen`, { params }).pipe(
-            shareReplay({ bufferSize: 1, refCount: true })
-        );
-        
+
+        this.resumenCache$ = this.http.get<ResumenGastos>(`${this.apiUrl}/resumen`, { params }).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+
         return this.resumenCache$;
     }
 
@@ -103,18 +94,17 @@ export class GastoService {
      * Obtener gasto por ID
      */
     getById(id: string): Observable<Gasto> {
-        return this.http.get<ApiResponse<Gasto>>(`${this.apiUrl}/${id}`)
-            .pipe(map(response => response.data));
+        return this.http.get<Result<Gasto>>(`${this.apiUrl}/${id}`).pipe(map((response) => response.value));
     }
 
     /**
      * Crear gasto
      */
-    create(gasto: GastoCreate): Observable<Gasto> {
-        return this.http.post<ApiResponse<Gasto>>(this.apiUrl, gasto).pipe(
-            map(response => {
+    create(gasto: GastoCreate): Observable<string> {
+        return this.http.post<Result<string>>(this.apiUrl, gasto).pipe(
+            map((response) => {
                 this.invalidateCache();
-                return response.data;
+                return response.value;
             })
         );
     }
@@ -122,11 +112,11 @@ export class GastoService {
     /**
      * Actualizar gasto
      */
-    update(id: string, gasto: Partial<Gasto>): Observable<Gasto> {
-        return this.http.put<ApiResponse<Gasto>>(`${this.apiUrl}/${id}`, gasto).pipe(
-            map(response => {
+    update(id: string, gasto: Partial<Gasto>): Observable<string> {
+        return this.http.put<Result<string>>(`${this.apiUrl}/${id}`, gasto).pipe(
+            map((response) => {
                 this.invalidateCache();
-                return response.data;
+                return response.value;
             })
         );
     }
@@ -136,7 +126,7 @@ export class GastoService {
      */
     delete(id: string): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/${id}`, { observe: 'response' }).pipe(
-            map(response => {
+            map((response) => {
                 this.invalidateCache();
                 // 204 No Content es éxito, no devuelve data
                 return undefined as void;

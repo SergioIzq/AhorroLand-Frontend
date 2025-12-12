@@ -22,14 +22,18 @@ export interface ResumenIngresos {
     total: number;
     cantidad: number;
     ingresos: Ingreso[];
-    porTipo?: Record<string, number>;
+    porCategoria?: Record<string, number>;
 }
 
 export interface IngresoCreate {
-    concepto: string;
-    cantidad: number;
+    tempid?: string;
+    importe: number;
     fecha: string;
-    tipo?: string;
-    fuente?: string;
     descripcion?: string;
+    conceptoId: string;
+    categoriaId: string;
+    clienteId: string;
+    personaId: string;
+    cuentaId: string;
+    formaPagoId: string;
 }

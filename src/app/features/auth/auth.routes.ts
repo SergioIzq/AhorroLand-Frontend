@@ -13,7 +13,7 @@ export default [
         loadComponent: () => import('./pages/register.page').then((m) => m.RegisterPage)
     },
     {
-        path: 'confirmar-correo',
+        path: 'confirmar-email',
         canActivate: [noAuthGuard],
         loadComponent: () => import('./pages/confirm-email.page').then((m) => m.ConfirmEmail)
     },

@@ -1,22 +1,29 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
-import { firstValueFrom } from 'rxjs'; // ✅ Necesario para async/await
+import { firstValueFrom, Observable } from 'rxjs';
 import { AuthService } from '@/core/services/api/auth.service';
 import { LoginCredentials, Usuario } from '../models';
 import { ErrorResponse } from '../models/error-response.model';
+import { Router } from '@angular/router';
 
 interface AuthState {
     user: Usuario | null;
     isAuthenticated: boolean;
     loading: boolean;
     error: string | null;
+    initialized: boolean;
+    isLoggingOut: boolean;
+    isFetchingUser: boolean; // Nuevo flag para prevenir peticiones duplicadas
 }
 
 const initialState: AuthState = {
     user: null,
     isAuthenticated: false,
     loading: false,
-    error: null
+    error: null,
+    initialized: false,
+    isLoggingOut: false,
+    isFetchingUser: false
 };
 
 export const AuthStore = signalStore(
@@ -25,142 +32,149 @@ export const AuthStore = signalStore(
 
     withComputed((store) => ({
         isLoggedIn: computed(() => store.isAuthenticated() && store.user() !== null),
+
         userName: computed(() => {
             const user = store.user();
-            return user ? `${user.nombre} ${user.apellido || ''}`.trim() : '';
+            return user ? `${user.nombre} ${user.apellidos ?? ''}`.trim() : '';
         }),
+
         userInitials: computed(() => {
             const user = store.user();
             if (!user) return '';
-            const firstInitial = user.nombre?.charAt(0) || '';
-            const lastInitial = user.apellido?.charAt(0) || '';
-            return `${firstInitial}${lastInitial}`.toUpperCase();
+            const first = user.nombre?.charAt(0) || '';
+            const last = user.apellidos?.charAt(0) || '';
+            return `${first}${last}`.toUpperCase();
         })
     })),
 
-    withMethods((store, authService = inject(AuthService)) => ({
-        
+    withMethods((store, authService = inject(AuthService), router = inject(Router)) => ({
+        // Ejecuta una petición simple sin actualizar estado de usuario (solo loading/error)
+        async _executeSimpleRequest<T>(request$: Observable<T>, errorMessage: string): Promise<T> {
+            patchState(store, { loading: true, error: null });
+            try {
+                const result = await firstValueFrom(request$);
+                patchState(store, { loading: false });
+                return result;
+            } catch (err: any) {
+                const errorMsg = (err.error as ErrorResponse)?.detail || errorMessage;
+                patchState(store, { loading: false, error: errorMsg });
+                throw err;
+            }
+        },
+
+        // --- Acciones de Autenticación ---
+
         async login(credentials: LoginCredentials): Promise<void> {
             patchState(store, { loading: true, error: null });
-
             try {
-                // Convertir a PascalCase para backend
-                const loginPayload = {
-                    correo: credentials.correo,
-                    contrasena: credentials.contrasena
-                };
-
-                // Esperamos la respuesta
-                await firstValueFrom(authService.login(loginPayload));
-                
-                // Si pasa, obtenemos el usuario actual
-                const user = authService.getCurrentUser();
-                
+                const user = await firstValueFrom(authService.login(credentials));
                 patchState(store, {
                     user,
                     isAuthenticated: true,
                     loading: false,
                     error: null
                 });
-
             } catch (err: any) {
-                // Extraemos el mensaje de error de tu backend
                 const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al iniciar sesión';
-                
-                patchState(store, {
-                    loading: false,
-                    error: errorMsg
-                });
-                
-                // ⚠️ IMPORTANTE: Relanzar error para el componente
+                patchState(store, { loading: false, error: errorMsg });
                 throw err;
             }
         },
 
-        async register(payload: { correo: string; contrasena: string }): Promise<void> {
-            patchState(store, { loading: true, error: null });
-            try {
-                await firstValueFrom(authService.register(payload));
-                patchState(store, { loading: false });
-            } catch (err: any) {
-                const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al registrar usuario';
-                patchState(store, { loading: false, error: errorMsg });
-                throw err;
-            }
+        async register(payload: { correo: string; contrasena: string; nombre: string; apellidos?: string }): Promise<void> {
+            await this._executeSimpleRequest(authService.register(payload), 'Error al registrar usuario');
         },
 
         async confirmEmail(token: string): Promise<void> {
-            patchState(store, { loading: true, error: null });
-            try {
-                await firstValueFrom(authService.confirmEmail(token));
-                patchState(store, { loading: false });
-            } catch (err: any) {
-                const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al confirmar correo';
-                patchState(store, { loading: false, error: errorMsg });
-                throw err;
-            }
+            await this._executeSimpleRequest(authService.confirmEmail(token), 'Error al confirmar correo');
         },
 
-        async forgotPassword(email: string): Promise<void> {
-            patchState(store, { loading: true, error: null });
-            try {
-                await firstValueFrom(authService.forgotPassword(email));
-                patchState(store, { loading: false });
-            } catch (err: any) {
-                const errorMsg = (err.error as ErrorResponse)?.detail || 'No se pudo enviar el correo';
-                patchState(store, { loading: false, error: errorMsg });
-                throw err;
-            }
+        async forgotPassword(correo: string): Promise<void> {
+            await this._executeSimpleRequest(authService.forgotPassword(correo), 'No se pudo enviar el correo');
         },
 
-        async resetPassword(payload: { email: string; token: string; newPassword: string }): Promise<void> {
-            patchState(store, { loading: true, error: null });
-            try {
-                await firstValueFrom(authService.resetPassword(payload.email, payload.token, payload.newPassword));
-                patchState(store, { loading: false });
-                // Aquí el componente recibirá el control sin errores y mostrará la pantalla de éxito
-            } catch (err: any) {
-                const errorMsg = (err.error as ErrorResponse)?.detail || 'No se pudo restablecer la contraseña';
-                patchState(store, { loading: false, error: errorMsg });
-                // Aquí el componente caerá en su bloque catch
-                throw err;
-            }
+        async resetPassword(payload: { correo: string; token: string; newPassword: string }): Promise<void> {
+            await this._executeSimpleRequest(authService.resetPassword(payload.correo, payload.token, payload.newPassword), 'No se pudo restablecer la contraseña');
         },
 
-        // 6. RESEND CONFIRMATION
-        async resendConfirmationEmail(email: string): Promise<void> {
-            patchState(store, { loading: true, error: null });
-            try {
-                await firstValueFrom(authService.resendConfirmation(email));
-                patchState(store, { loading: false });
-            } catch (err: any) {
-                const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al reenviar correo';
-                patchState(store, { loading: false, error: errorMsg });
-                throw err;
-            }
+        async resendConfirmationEmail(correo: string): Promise<void> {
+            await this._executeSimpleRequest(authService.resendConfirmation(correo), 'Error al reenviar correo');
         },
 
-        // 7. LOGOUT
         async logout(): Promise<void> {
-            patchState(store, { loading: true });
+            patchState(store, { loading: true, isLoggingOut: true });
             try {
                 await firstValueFrom(authService.logout());
             } catch (err) {
-                console.warn('Error en logout backend, limpiando localmente de todos modos', err);
+                console.warn('Logout falló en backend, limpiando localmente', err);
             } finally {
-                // Siempre limpiamos el estado local, falle o no el backend
+                authService.clearUser();
                 patchState(store, {
                     user: null,
                     isAuthenticated: false,
                     loading: false,
                     error: null
                 });
+                
+                await router.navigate(['/auth/login']);
+                
+                // Resetear isLoggingOut después de la navegación
+                patchState(store, { isLoggingOut: false });
             }
         },
 
-        // Métodos síncronos auxiliares
+        // --- Acciones de Perfil ---
+
+        async updateProfile(data: { nombre: string; apellidos: string | null }): Promise<void> {
+            patchState(store, { loading: true, error: null });
+            try {
+                await firstValueFrom(authService.updateProfile(data));
+
+                // Actualización Optimista
+                const currentUser = store.user();
+                if (currentUser) {
+                    const updatedUser = {
+                        ...currentUser,
+                        nombre: data.nombre,
+                        apellidos: data.apellidos ?? null
+                    };
+
+                    authService.setUser(updatedUser);
+                    patchState(store, { user: updatedUser, loading: false });
+                }
+            } catch (err: any) {
+                const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al actualizar perfil';
+                patchState(store, { loading: false, error: errorMsg });
+                throw err;
+            }
+        },
+
+        // auth.store.ts (Ya lo tienes bien, solo confirmo el flujo)
+        async updateAvatar(file: File): Promise<void> {
+            patchState(store, { loading: true, error: null });
+            try {
+                // 1. Sube archivo -> Backend devuelve "https://api.../avatars/nuevo-guid.jpg"
+                const newAvatarUrl = await firstValueFrom(authService.uploadAvatar(file));
+
+                // 2. Actualiza estado
+                const currentUser = store.user();
+                if (currentUser) {
+                    // Al cambiar la URL, Angular repinta el componente p-avatar
+                    const updatedUser = { ...currentUser, avatar: newAvatarUrl };
+                    authService.setUser(updatedUser);
+                    patchState(store, { user: updatedUser, loading: false });
+                }
+            } catch (err: any) {
+                const errorMsg = (err.error as ErrorResponse)?.detail || 'Error al actualizar avatar';
+                patchState(store, { loading: false, error: errorMsg });
+                throw err;
+            }
+        },
+
+        // --- Utilidades Síncronas ---
+
         setUser(user: Usuario | null) {
-            patchState(store, { user, isAuthenticated: user !== null });
+            patchState(store, { user, isAuthenticated: !!user });
         },
 
         clearError() {
@@ -170,9 +184,37 @@ export const AuthStore = signalStore(
 
     withHooks({
         onInit(store, authService = inject(AuthService)) {
-            const currentUser = authService.getCurrentUser();
-            if (currentUser) {
-                store.setUser(currentUser);
+            // Prevenir múltiples requests simultáneos durante F5 spam
+            if (store.isFetchingUser()) {
+                return;
+            }
+
+            const user = authService.getUserFromStorage();
+
+            if (user) {
+                patchState(store, { user, isAuthenticated: true, initialized: true });
+
+                // Marcar que se está haciendo el fetch
+                patchState(store, { isFetchingUser: true });
+
+                authService.fetchCurrentUser().subscribe({
+                    next: (freshUser) => patchState(store, { 
+                        user: freshUser, 
+                        isAuthenticated: true, 
+                        isFetchingUser: false 
+                    }),
+                    error: () => {
+                        console.warn('Sesión expirada');
+                        authService.clearUser();
+                        patchState(store, { 
+                            user: null, 
+                            isAuthenticated: false, 
+                            isFetchingUser: false 
+                        });
+                    }
+                });
+            } else {
+                patchState(store, { initialized: true });
             }
         }
     })

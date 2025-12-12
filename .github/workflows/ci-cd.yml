@@ -1,0 +1,157 @@
+name: CI/CD Frontend - Docker Build & Push
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE: sergioizqdev/ahorroland-frontend
+  NODE_VERSION: '22'
+
+jobs:
+  build-and-test:
+    name: Build and Test Angular Application
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      # OPTIMIZACIÓN 1: Caché de Node.js con setup-node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      # OPTIMIZACIÓN 2: Caché adicional manual de node_modules (más agresiva)
+      - name: Cache node modules
+        uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+          
+      # OPTIMIZACIÓN 3: Solo instalar si no hay caché hit
+      - name: Install dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
+        
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+        
+      # OPTIMIZACIÓN 4: Build con flags de velocidad máxima
+      # CORREGIDO PARA ANGULAR 20+ (esbuild)
+      - name: Build Angular app
+        run: |
+          npm run build -- \
+            --configuration=production \
+            --source-map=false
+        
+      # OPTIMIZACIÓN 5: Caché del build de Angular para reutilizar en Docker
+      - name: Cache Angular build
+        uses: actions/cache@v3
+        with:
+          path: dist
+          key: ${{ runner.os }}-angular-build-${{ github.sha }}
+        
+      - name: Run tests
+        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage=false
+        continue-on-error: true
+
+  docker-build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:buildx-stable-1
+            network=host
+          # OPTIMIZACIÓN 6: BuildKit con garbage collection optimizado
+          buildkitd-flags: --oci-worker-gc --oci-worker-gc-keepstorage 10000
+        
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            
+      # OPTIMIZACIÓN 7: Build optimizado con caché mejorada
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # CACHÉ: GitHub Actions (más rápido que registry)
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # OPTIMIZACIÓN 8: Solo amd64 (ahorra ~50% tiempo vs multi-arch)
+          # Descomentar arm64 solo si lo necesitas: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          # Optimizaciones de metadata
+          provenance: false
+          sbom: false
+          build-args: |
+            NODE_ENV=production
+            BUILDKIT_INLINE_CACHE=1
+          
+      - name: Image digest
+        run: echo ${{ steps.meta.outputs.digest }}
+        
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+    if: success()
+    
+    steps:
+      - name: Deployment notification
+        run: |
+          echo "✅ Docker image built and pushed successfully!"
+          echo "Image: ${{ env.DOCKER_IMAGE }}"
+          echo "Tags: ${{ needs.docker-build-and-push.outputs.tags }}"
+          echo "🚀 Deployment webhook will be triggered automatically"
