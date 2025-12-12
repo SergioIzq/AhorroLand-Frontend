@@ -8,8 +8,7 @@ WORKDIR /app
 
 # OPTIMIZACIÓN 1: Copiar archivos de configuración
 # Nota: He eliminado 'extra-webpack.config.js' ya que Angular 20+ usa esbuild
-COPY package*.json angular.json tsconfig*.json ./
-COPY generate-sitemap.js ./
+COPY package*.json angular.json tsconfig*.json ngsw-config.json ./
 
 # OPTIMIZACIÓN 2: Instalar dependencias
 RUN npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
