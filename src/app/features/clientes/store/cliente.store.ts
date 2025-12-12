@@ -114,7 +114,7 @@ export const ClienteStore = signalStore(
             }
         },
 
-        loadClienteesPaginated: rxMethod<{
+        loadClientesPaginated: rxMethod<{
             page: number;
             pageSize: number;
             searchTerm?: string;

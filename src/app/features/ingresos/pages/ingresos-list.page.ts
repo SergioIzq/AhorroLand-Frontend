@@ -26,12 +26,9 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
         <app-base-page-template [loading]="ingresosStore.loading() && ingresosStore.ingresos().length === 0" [skeletonType]="'table'">
             <div class="card surface-ground px-4 py-5 md:px-6 lg:px-8">
                 <div class="surface-card shadow-2 border-round p-6">
-                    <p-toast></p-toast>
-
                     <p-toolbar styleClass="mb-6 gap-2 p-6">
                         <ng-template #start>
                             <p-button label="Nuevo Ingreso" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
-                            <p-button severity="secondary" label="Eliminar" icon="pi pi-trash" outlined (onClick)="deleteSelectedIngresos()" [disabled]="!selectedIngresos() || !selectedIngresos().length" />
                         </ng-template>
 
                         <ng-template #end>
@@ -75,24 +72,29 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #header>
                             <tr>
-                                <th style="width: 3rem; padding: 1rem">
-                                    <p-tableHeaderCheckbox />
+                                <th pSortableColumn="fecha" style="min-width:10rem; padding: 1rem">
+                                    Fecha
+                                    <p-sortIcon field="fecha" />
                                 </th>
-                                <th pSortableColumn="conceptoNombre" style="min-width:16rem; padding: 1rem">
+                                <th pSortableColumn="personaNombre" style="min-width:12rem">
+                                    Persona
+                                    <p-sortIcon field="personaNombre" />
+                                </th>
+                                <th pSortableColumn="formaPagoNombre" style="min-width:12rem">
+                                    Forma de Pago
+                                    <p-sortIcon field="formaPagoNombre" />
+                                </th>
+                                <th pSortableColumn="clienteNombre" style="min-width:12rem">
+                                    Cliente
+                                    <p-sortIcon field="clienteNombre" />
+                                </th>
+                                <th pSortableColumn="conceptoNombre" style="min-width:14rem">
                                     Concepto
                                     <p-sortIcon field="conceptoNombre" />
                                 </th>
-                                <th pSortableColumn="categoriaNombre" style="min-width:12rem">
-                                    Categoría
-                                    <p-sortIcon field="categoriaNombre" />
-                                </th>
-                                <th pSortableColumn="proveedorNombre" style="min-width:12rem">
-                                    Proveedor
-                                    <p-sortIcon field="proveedorNombre" />
-                                </th>
-                                <th pSortableColumn="fecha" style="min-width:10rem">
-                                    Fecha
-                                    <p-sortIcon field="fecha" />
+                                <th pSortableColumn="cuentaNombre" style="min-width:12rem">
+                                    Cuenta
+                                    <p-sortIcon field="cuentaNombre" />
                                 </th>
                                 <th pSortableColumn="importe" style="min-width:10rem">
                                     Importe
@@ -104,9 +106,10 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #body let-ingreso>
                             <tr>
-                                <td style="padding: 1rem">
-                                    <p-tableCheckbox [value]="ingreso" />
-                                </td>
+                                <td style="padding: 1rem">{{ ingreso.fecha | date: 'dd/MM/yyyy' }}</td>
+                                <td>{{ ingreso.personaNombre || '-' }}</td>
+                                <td>{{ ingreso.formaPagoNombre || '-' }}</td>
+                                <td>{{ ingreso.clienteNombre || '-' }}</td>
                                 <td style="padding: 1rem">
                                     <div class="flex flex-col">
                                         <span class="font-semibold">{{ ingreso.conceptoNombre }}</span>
@@ -115,11 +118,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                                         }
                                     </div>
                                 </td>
-                                <td style="padding: 1rem">
-                                    <p-tag [value]="ingreso.categoriaNombre || 'Sin categoría'" [severity]="getCategorySeverity(ingreso.categoriaNombre)" />
-                                </td>
-                                <td>{{ ingreso.proveedorNombre || '-' }}</td>
-                                <td>{{ ingreso.fecha | date: 'dd/MM/yyyy' }}</td>
+                                <td>{{ ingreso.cuentaNombre || '-' }}</td>
                                 <td>
                                     <span class="font-bold text-green-500">{{ ingreso.importe | number: '1.2-2' }} €</span>
                                 </td>
@@ -133,15 +132,17 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         <ng-template #loadingbody>
                             <tr>
                                 <td style="padding: 1rem"><p-skeleton /></td>
+                                <td style="padding: 1rem"><p-skeleton width="6rem" /></td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td><p-skeleton width="70%" /></td>
                                 <td style="padding: 1rem">
                                     <div class="flex flex-col gap-2">
                                         <p-skeleton width="80%" />
                                         <p-skeleton width="60%" height=".8rem" />
                                     </div>
                                 </td>
-                                <td style="padding: 1rem"><p-skeleton width="6rem" height="2rem" /></td>
                                 <td><p-skeleton width="70%" /></td>
-                                <td><p-skeleton width="6rem" /></td>
                                 <td><p-skeleton width="5rem" /></td>
                                 <td>
                                     <div class="flex gap-2">
@@ -154,7 +155,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="8" style="padding: 2rem">
+                                <td colspan="10" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay ingresos</p>
@@ -298,10 +299,19 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
                 cuentaId: ingreso.cuentaId!
             };
 
-            this.ingresosStore.createIngreso(ingresoCreate).then(() => {
+            const displayData: Partial<Ingreso> = {
+                conceptoNombre: ingreso.conceptoNombre,
+                categoriaNombre: ingreso.categoriaNombre,
+                cuentaNombre: ingreso.cuentaNombre,
+                formaPagoNombre: ingreso.formaPagoNombre,
+                clienteNombre: ingreso.clienteNombre,
+                personaNombre: ingreso.personaNombre
+            };
+
+            this.ingresosStore.createIngreso(ingresoCreate, displayData).then(() => {
                 this.showSuccess('Ingreso creado correctamente');
-                // No reloadIngresos() - optimistic update already syncs UI
             });
+            
             this.ingresoDialog.set(false);
             this.currentIngreso.set({});
         }

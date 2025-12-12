@@ -19,18 +19,17 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 @Component({
     selector: 'app-clientes-list-page',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TableModule, ToolbarModule, InputIconModule, IconFieldModule, SkeletonModule, ClienteFormModalComponent, BasePageTemplateComponent],
-    providers: [MessageService, ConfirmationService],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, TableModule, ToolbarModule, InputIconModule, IconFieldModule, SkeletonModule, ClienteFormModalComponent, BasePageTemplateComponent],
+    providers: [ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <app-base-page-template [loading]="clienteStore.loading()" [skeletonType]="'table'">
             <div class="card surface-ground px-4 py-5 md:px-6 lg:px-8">
                 <div class="surface-card shadow-2 border-round p-6">
-                    <p-toast></p-toast>
 
                     <p-toolbar class="mb-6 gap-2 p-6">
                         <ng-template #start>
-                            <p-button label="Nueva Cliente" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
+                            <p-button label="Nuevo Cliente" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
                         </ng-template>
 
                         <ng-template #end>
@@ -59,7 +58,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                     >
                         <ng-template #caption>
                             <div class="flex items-center justify-between py-3 px-4">
-                                <h5 class="m-0 font-semibold text-xl">Gestión de Clientees</h5>
+                                <h5 class="m-0 font-semibold text-xl">Gestión de Clientes</h5>
                                 <p-iconfield>
                                     <p-inputicon styleClass="pi pi-search" />
                                     <input pInputText type="text" [(ngModel)]="searchTerm" (input)="onSearchChange($event)" placeholder="Buscar clientes..." />
@@ -150,7 +149,7 @@ export class ClientesListPage extends BasePageComponent {
         this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe((searchValue) => {
             this.searchTerm = searchValue;
             this.pageNumber = 1; // Resetear a primera página en búsqueda
-            this.reloadClientees();
+            this.reloadClientes();
         });
     }
 
@@ -167,7 +166,7 @@ export class ClientesListPage extends BasePageComponent {
             this.sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
         }
 
-        this.reloadClientees();
+        this.reloadClientes();
     }
 
     /**
@@ -181,8 +180,8 @@ export class ClientesListPage extends BasePageComponent {
     /**
      * Recargar clientes con los filtros actuales
      */
-    private reloadClientees() {
-        this.clienteStore.loadClienteesPaginated({
+    private reloadClientes() {
+        this.clienteStore.loadClientesPaginated({
             page: this.pageNumber,
             pageSize: this.pageSize,
             searchTerm: this.searchTerm || undefined,
@@ -191,14 +190,14 @@ export class ClientesListPage extends BasePageComponent {
         });
     }
 
-    loadClientees() {
-        this.reloadClientees();
+    loadClientes() {
+        this.reloadClientes();
     }
 
     refreshTable() {
         this.pageNumber = 1;
         this.searchTerm = '';
-        this.reloadClientees();
+        this.reloadClientes();
         this.showInfo('Datos actualizados', 'Actualización');
     }
 
@@ -219,7 +218,8 @@ export class ClientesListPage extends BasePageComponent {
                 this.showSuccess('Cliente actualizado correctamente');
                 this.hideDialog();
             } catch (error: any) {
-                this.showError(error.message || 'Error al actualizar el cliente');
+                // El error ya fue manejado por el interceptor
+                // No mostrar toast adicional
             }
         } else {
             try {
@@ -227,7 +227,8 @@ export class ClientesListPage extends BasePageComponent {
                 this.showSuccess('Cliente creado correctamente');
                 this.hideDialog();
             } catch (error: any) {
-                this.showError(error.message || 'Error al crear el cliente');
+                // El error ya fue manejado por el interceptor
+                // No mostrar toast adicional
             }
         }
     }

@@ -15,7 +15,7 @@ interface ApiResult {
 }
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
-    const messageService = inject(MessageService, { optional: true });
+    const messageService = inject(MessageService);
 
     return next(req).pipe(
         catchError((error: HttpErrorResponse) => {
@@ -58,17 +58,39 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
  * Extrae el Título y el Mensaje basándose en tu estructura Result backend
  */
 function extractErrorData(httpError: HttpErrorResponse): { title: string, message: string } {
+    // Debug: Log para ver qué está llegando (puedes comentarlo después)
+    console.log('🔍 Error interceptado:', {
+        status: httpError.status,
+        error: httpError.error,
+        type: typeof httpError.error
+    });
     
     // CASO 1: Tu estructura Backend (.NET Result Pattern)
     // Verificamos si la respuesta tiene la forma { isFailure: true, error: { ... } }
     const apiResult = httpError.error as ApiResult;
 
-    if (apiResult?.error && apiResult.error.code) {
-        return {
-            title: apiResult.error.name || 'Error',
-            message: apiResult.error.message || 'Ocurrió un error inesperado.'
-        };
+    // Verificación más robusta para el Result Pattern
+    if (apiResult && typeof apiResult === 'object') {
+        // Verificar si tiene la estructura de Result con error
+        if (apiResult.isFailure && apiResult.error) {
+            console.log('✅ Detectado Result Pattern del backend:', apiResult.error);
+            return {
+                title: apiResult.error.name || 'Error',
+                message: apiResult.error.message || 'Ocurrió un error inesperado.'
+            };
+        }
+        
+        // A veces el error puede venir directamente sin isFailure (por ejemplo, en algunos middlewares)
+        if (apiResult.error && apiResult.error.code && apiResult.error.message) {
+            console.log('✅ Detectado error directo del backend');
+            return {
+                title: apiResult.error.name || 'Error',
+                message: apiResult.error.message
+            };
+        }
     }
+    
+    console.log('⚠️ No se detectó Result Pattern, apiResult:', apiResult);
 
     // CASO 2: ValidationProblemDetails nativo de .NET (Fallback)
     // Si por alguna razón el middleware global falló y .NET devolvió sus validaciones por defecto
@@ -81,13 +103,30 @@ function extractErrorData(httpError: HttpErrorResponse): { title: string, messag
         };
     }
 
-    // CASO 3: Fallbacks Genéricos basados en Status Code
+    // CASO 3: Si el error es un string (a veces HttpClient lo parsea así)
+    if (typeof httpError.error === 'string') {
+        try {
+            const parsed = JSON.parse(httpError.error);
+            if (parsed?.error?.message) {
+                return {
+                    title: parsed.error.name || 'Error',
+                    message: parsed.error.message
+                };
+            }
+        } catch (e) {
+            // No es JSON válido, continuar con fallbacks
+        }
+    }
+
+    // CASO 4: Fallbacks Genéricos basados en Status Code
     // (Si el backend explotó tan fuerte que no mandó JSON, o es un error de red)
+    console.log('⚠️ Usando fallback genérico para status:', httpError.status);
     switch (httpError.status) {
         case 400: return { title: 'Petición Inválida', message: 'Los datos enviados son incorrectos.' };
         case 401: return { title: 'Sesión Expirada', message: 'Por favor, inicia sesión nuevamente.' };
         case 403: return { title: 'Acceso Denegado', message: 'No tienes permisos para realizar esta acción.' };
         case 404: return { title: 'No Encontrado', message: 'El recurso solicitado no existe.' };
+        case 409: return { title: 'Conflicto de recurso', message: 'El recurso que intentas crear ya existe.' };
         case 422: return { title: 'Error de Validación', message: 'No se pudo procesar la entidad enviada.' };
         case 500: return { title: 'Error del Servidor', message: 'Estamos teniendo problemas técnicos. Intenta más tarde.' };
         case 0:   return { title: 'Sin Conexión', message: 'Verifica tu conexión a internet.' };

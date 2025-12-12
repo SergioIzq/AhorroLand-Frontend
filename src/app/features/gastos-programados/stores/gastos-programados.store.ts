@@ -67,27 +67,71 @@ export const GastosProgramadosStore = signalStore(
 
         createGasto: rxMethod<any>(
             pipe(
-                tap(() => patchState(store, { loading: true })),
-                switchMap((gasto) =>
-                    service.create(gasto).pipe(
+                switchMap((gasto) => {
+                    const tempId = `temp_${Date.now()}`;
+                    const tempGasto: GastoProgramado = {
+                        id: tempId,
+                        conceptoId: gasto.conceptoId,
+                        conceptoNombre: '',
+                        categoriaId: gasto.categoriaId,
+                        categoriaNombre: '',
+                        proveedorId: gasto.proveedorId,
+                        proveedorNombre: '',
+                        personaId: gasto.personaId,
+                        personaNombre: '',
+                        cuentaId: gasto.cuentaId,
+                        cuentaNombre: '',
+                        formaPagoId: gasto.formaPagoId,
+                        formaPagoNombre: '',
+                        importe: gasto.importe,
+                        descripcion: gasto.descripcion,
+                        fechaEjecucion: gasto.fechaEjecucion,
+                        frecuencia: gasto.frecuencia,
+                        activo: gasto.activo ?? true,
+                        usuarioId: ''
+                    };
+
+                    patchState(store, {
+                        gastosProgramados: [tempGasto, ...store.gastosProgramados()],
+                        totalRecords: store.totalRecords() + 1,
+                        loading: true
+                    });
+
+                    return service.create(gasto).pipe(
                         tapResponse({
-                            next: () => {
-                                patchState(store, { loading: false, error: null });
+                            next: (id: string) => {
+                                patchState(store, {
+                                    gastosProgramados: store.gastosProgramados().map(g =>
+                                        g.id === tempId ? { ...tempGasto, id } : g
+                                    ),
+                                    loading: false,
+                                    error: null
+                                });
                             },
                             error: (error: any) => {
                                 patchState(store, {
+                                    gastosProgramados: store.gastosProgramados().filter(g => g.id !== tempId),
+                                    totalRecords: store.totalRecords() - 1,
                                     loading: false,
                                     error: error.message || 'Error al crear gasto programado'
                                 });
                             }
                         })
-                    )
-                )
+                    );
+                })
             )
         ),
 
         async update(id: string, gasto: Partial<GastoProgramado>): Promise<string> {
-            patchState(store, { loading: true });
+            const gastoAnterior = store.gastosProgramados().find(g => g.id === id);
+
+            patchState(store, {
+                gastosProgramados: store.gastosProgramados().map(g =>
+                    g.id === id ? { ...g, ...gasto } : g
+                ),
+                loading: true
+            });
+
             try {
                 const response = await firstValueFrom(service.update(id, gasto));
 
@@ -95,8 +139,15 @@ export const GastosProgramadosStore = signalStore(
                     patchState(store, { loading: false });
                     return response.value;
                 }
-                throw new Error(response.error?.message || 'Error al actualizar proveedor');
+                throw new Error(response.error?.message || 'Error al actualizar gasto programado');
             } catch (err) {
+                if (gastoAnterior) {
+                    patchState(store, {
+                        gastosProgramados: store.gastosProgramados().map(g =>
+                            g.id === id ? gastoAnterior : g
+                        )
+                    });
+                }
                 patchState(store, { loading: false });
                 throw err;
             }
@@ -104,24 +155,36 @@ export const GastosProgramadosStore = signalStore(
 
         deleteGasto: rxMethod<string>(
             pipe(
-                tap((id) => {
-                    const gastos = store.gastosProgramados().filter((g) => g.id !== id);
-                    patchState(store, { gastosProgramados: gastos });
-                }),
-                switchMap((id) =>
-                    service.delete(id).pipe(
+                switchMap((id) => {
+                    const gastoEliminado = store.gastosProgramados().find(g => g.id === id);
+                    const totalAnterior = store.totalRecords();
+
+                    patchState(store, {
+                        gastosProgramados: store.gastosProgramados().filter(g => g.id !== id),
+                        totalRecords: store.totalRecords() - 1
+                    });
+
+                    return service.delete(id).pipe(
                         tapResponse({
                             next: () => {
                                 patchState(store, { error: null });
                             },
                             error: (error: any) => {
-                                patchState(store, {
-                                    error: error.message || 'Error al eliminar gasto programado'
-                                });
+                                if (gastoEliminado) {
+                                    patchState(store, {
+                                        gastosProgramados: [...store.gastosProgramados(), gastoEliminado],
+                                        totalRecords: totalAnterior,
+                                        error: error.message || 'Error al eliminar gasto programado'
+                                    });
+                                } else {
+                                    patchState(store, {
+                                        error: error.message || 'Error al eliminar gasto programado'
+                                    });
+                                }
                             }
                         })
-                    )
-                )
+                    );
+                })
             )
         ),
 

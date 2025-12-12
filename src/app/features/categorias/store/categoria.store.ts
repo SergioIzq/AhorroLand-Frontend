@@ -198,24 +198,17 @@ export const CategoriaStore = signalStore(
 
         deleteCategoria: rxMethod<string>(
             pipe(
-                tap((id) => {
+                switchMap((id) => {
+                    // Guardar categoría ANTES de eliminar
+                    const categoriaEliminada = store.categorias().find(c => c.id === id);
+                    const totalAnterior = store.totalRecords();
+                    
                     // Actualización optimista: eliminar inmediatamente de la UI
                     patchState(store, (state) => ({
                         categorias: state.categorias.filter((c) => c.id !== id),
                         totalRecords: state.totalRecords - 1,
                         searchCache: new Map() // Invalidar caché
                     }));
-                }),
-                switchMap((id) => {
-                    // Guardar categoría eliminada para rollback
-                    const categoriaEliminada = store.categorias().find(c => c.id === id) || 
-                        (() => {
-                            // Si ya fue eliminada del state, intentar recuperarla del último snapshot
-                            const allCats = [...store.categorias()];
-                            return allCats.find(c => c.id === id);
-                        })();
-                    
-                    const totalAnterior = store.totalRecords();
                     
                     return categoriaService.delete(id).pipe(
                         tapResponse({

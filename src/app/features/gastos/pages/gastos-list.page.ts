@@ -30,7 +30,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     <p-toolbar class="mb-6 gap-2 p-6">
                         <ng-template #start>
                             <p-button label="Nuevo Gasto" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
-                            <p-button severity="secondary" label="Eliminar" icon="pi pi-trash" outlined (onClick)="deleteSelectedGastos()" [disabled]="!selectedGastos() || selectedGastos().length === 0" />
                         </ng-template>
 
                         <ng-template #end>
@@ -73,24 +72,29 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #header>
                             <tr>
-                                <th style="width: 3rem; padding: 1rem">
-                                    <p-tableHeaderCheckbox />
+                                <th pSortableColumn="fecha" style="min-width:10rem; padding: 1rem">
+                                    Fecha
+                                    <p-sortIcon field="fecha" />
                                 </th>
-                                <th pSortableColumn="conceptoNombre" style="min-width:16rem; padding: 1rem">
-                                    Concepto
-                                    <p-sortIcon field="conceptoNombre" />
+                                <th pSortableColumn="personaNombre" style="min-width:12rem">
+                                    Persona
+                                    <p-sortIcon field="personaNombre" />
                                 </th>
-                                <th pSortableColumn="categoriaNombre" style="min-width:12rem">
-                                    Categoría
-                                    <p-sortIcon field="categoriaNombre" />
+                                <th pSortableColumn="formaPagoNombre" style="min-width:12rem">
+                                    Forma de Pago
+                                    <p-sortIcon field="formaPagoNombre" />
                                 </th>
                                 <th pSortableColumn="proveedorNombre" style="min-width:12rem">
                                     Proveedor
                                     <p-sortIcon field="proveedorNombre" />
                                 </th>
-                                <th pSortableColumn="fecha" style="min-width:10rem">
-                                    Fecha
-                                    <p-sortIcon field="fecha" />
+                                <th pSortableColumn="conceptoNombre" style="min-width:14rem">
+                                    Concepto
+                                    <p-sortIcon field="conceptoNombre" />
+                                </th>
+                                <th pSortableColumn="cuentaNombre" style="min-width:12rem">
+                                    Cuenta
+                                    <p-sortIcon field="cuentaNombre" />
                                 </th>
                                 <th pSortableColumn="importe" style="min-width:10rem">
                                     Importe
@@ -102,9 +106,10 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #body let-gasto>
                             <tr>
-                                <td style="padding: 1rem">
-                                    <p-tableCheckbox [value]="gasto" />
-                                </td>
+                                <td style="padding: 1rem">{{ gasto.fecha | date: 'dd/MM/yyyy' }}</td>
+                                <td>{{ gasto.personaNombre || '-' }}</td>
+                                <td>{{ gasto.formaPagoNombre || '-' }}</td>
+                                <td>{{ gasto.proveedorNombre || '-' }}</td>
                                 <td style="padding: 1rem">
                                     <div class="flex flex-col">
                                         <span class="font-semibold">{{ gasto.conceptoNombre }}</span>
@@ -113,11 +118,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                                         }
                                     </div>
                                 </td>
-                                <td style="padding: 1rem">
-                                    <p-tag [value]="gasto.categoriaNombre || 'Sin categoría'" [severity]="getCategorySeverity(gasto.categoriaNombre)" />
-                                </td>
-                                <td>{{ gasto.proveedorNombre || '-' }}</td>
-                                <td>{{ gasto.fecha | date: 'dd/MM/yyyy' }}</td>
+                                <td>{{ gasto.cuentaNombre || '-' }}</td>
                                 <td>
                                     <span class="font-bold text-red-500">{{ gasto.importe | number: '1.2-2' }} €</span>
                                 </td>
@@ -131,15 +132,17 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         <ng-template #loadingbody>
                             <tr>
                                 <td style="padding: 1rem"><p-skeleton /></td>
+                                <td style="padding: 1rem"><p-skeleton width="6rem" /></td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td><p-skeleton width="70%" /></td>
+                                <td><p-skeleton width="70%" /></td>
                                 <td style="padding: 1rem">
                                     <div class="flex flex-col gap-2">
                                         <p-skeleton width="80%" />
                                         <p-skeleton width="60%" height=".8rem" />
                                     </div>
                                 </td>
-                                <td style="padding: 1rem"><p-skeleton width="6rem" height="2rem" /></td>
                                 <td><p-skeleton width="70%" /></td>
-                                <td><p-skeleton width="6rem" /></td>
                                 <td><p-skeleton width="5rem" /></td>
                                 <td>
                                     <div class="flex gap-2">
@@ -152,7 +155,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                         <ng-template #emptymessage>
                             <tr>
-                                <td colspan="8" style="padding: 2rem">
+                                <td colspan="10" style="padding: 2rem">
                                     <div class="text-center py-8">
                                         <i class="pi pi-inbox text-500 text-5xl mb-3"></i>
                                         <p class="text-900 font-semibold text-xl mb-2">No hay gastos</p>

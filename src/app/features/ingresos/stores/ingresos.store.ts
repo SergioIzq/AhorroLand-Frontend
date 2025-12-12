@@ -72,14 +72,14 @@ export const IngresosStore = signalStore(
             const ingresos = store.ingresos();
             return Array.isArray(ingresos) ? ingresos.length : 0;
         }),
-        
+
         // Indica si hay datos cargados
         hasData: computed(() => {
             const ingresos = store.ingresos();
             return Array.isArray(ingresos) && ingresos.length > 0;
         })
     })),
-    
+
     withComputed((store) => ({
         // Estado de sincronización (separado para poder usar hasData)
         isSyncing: computed(() => store.loading() && store.hasData()),
@@ -136,255 +136,252 @@ export const IngresosStore = signalStore(
         const formaPagoStore = inject(FormaPagoStore);
 
         return {
-        // Cargar ingresos
-        loadIngresos: rxMethod<void>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap(() =>
-                    ingresoService.getAllIngresos().pipe(
-                        tapResponse({
-                            next: (ingresos) => {
-                                patchState(store, {
-                                    ingresos,
-                                    loading: false,
-                                    error: null
-                                });
-                            },
-                            error: (error: any) => {
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al cargar ingresos'
-                                });
-                            }
-                        })
+            // Cargar ingresos
+            loadIngresos: rxMethod<void>(
+                pipe(
+                    tap(() => patchState(store, { loading: true, error: null })),
+                    switchMap(() =>
+                        ingresoService.getAllIngresos().pipe(
+                            tapResponse({
+                                next: (ingresos) => {
+                                    patchState(store, {
+                                        ingresos,
+                                        loading: false,
+                                        error: null
+                                    });
+                                },
+                                error: (error: any) => {
+                                    patchState(store, {
+                                        loading: false,
+                                        error: error.userMessage || 'Error al cargar ingresos'
+                                    });
+                                }
+                            })
+                        )
                     )
                 )
-            )
-        ),
+            ),
 
-        // Cargar ingresos con paginación, búsqueda y ordenamiento
-        loadIngresosPaginated: rxMethod<{
-            page: number;
-            pageSize: number;
-            searchTerm?: string;
-            sortColumn?: string;
-            sortOrder?: string;
-        }>(
-            pipe(
-                tap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) => {
-                    patchState(store, { loading: true, error: null });
-                }),
-                switchMap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) =>
-                    ingresoService.getIngresos(page, pageSize, searchTerm, sortColumn, sortOrder).pipe(
-                        tapResponse({
-                            next: (response) => {
-                                patchState(store, {
-                                    ingresos: response.items,
-                                    totalRecords: response.totalCount,
-                                    loading: false,
-                                    error: null,
-                                    lastUpdated: Date.now(),
-                                    searchCache: new Map() // Invalidar caché
-                                });
-                            },
-                            error: (error: any) => {
-                                console.error('[STORE] Error al cargar ingresos:', error);
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al cargar ingresos'
-                                });
-                            }
-                        })
+            // Cargar ingresos con paginación, búsqueda y ordenamiento
+            loadIngresosPaginated: rxMethod<{
+                page: number;
+                pageSize: number;
+                searchTerm?: string;
+                sortColumn?: string;
+                sortOrder?: string;
+            }>(
+                pipe(
+                    tap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) => {
+                        patchState(store, { loading: true, error: null });
+                    }),
+                    switchMap(({ page, pageSize, searchTerm, sortColumn, sortOrder }) =>
+                        ingresoService.getIngresos(page, pageSize, searchTerm, sortColumn, sortOrder).pipe(
+                            tapResponse({
+                                next: (response) => {
+                                    patchState(store, {
+                                        ingresos: response.items,
+                                        totalRecords: response.totalCount,
+                                        loading: false,
+                                        error: null,
+                                        lastUpdated: Date.now(),
+                                        searchCache: new Map() // Invalidar caché
+                                    });
+                                },
+                                error: (error: any) => {
+                                    console.error('[STORE] Error al cargar ingresos:', error);
+                                    patchState(store, {
+                                        loading: false,
+                                        error: error.userMessage || 'Error al cargar ingresos'
+                                    });
+                                }
+                            })
+                        )
                     )
                 )
-            )
-        ),
+            ),
 
-        // Cargar ingresos por período
-        loadIngresosPorPeriodo: rxMethod<{ fechaInicio: string; fechaFin: string }>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap(({ fechaInicio, fechaFin }) =>
-                    ingresoService.getIngresosPorPeriodo(fechaInicio, fechaFin).pipe(
-                        tapResponse({
-                            next: (ingresos) => {
-                                patchState(store, {
-                                    ingresos,
-                                    loading: false,
-                                    filters: { ...store.filters(), fechaInicio, fechaFin }
-                                });
-                            },
-                            error: (error: any) => {
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al cargar ingresos'
-                                });
-                            }
-                        })
+            // Cargar ingresos por período
+            loadIngresosPorPeriodo: rxMethod<{ fechaInicio: string; fechaFin: string }>(
+                pipe(
+                    tap(() => patchState(store, { loading: true, error: null })),
+                    switchMap(({ fechaInicio, fechaFin }) =>
+                        ingresoService.getIngresosPorPeriodo(fechaInicio, fechaFin).pipe(
+                            tapResponse({
+                                next: (ingresos) => {
+                                    patchState(store, {
+                                        ingresos,
+                                        loading: false,
+                                        filters: { ...store.filters(), fechaInicio, fechaFin }
+                                    });
+                                },
+                                error: (error: any) => {
+                                    patchState(store, {
+                                        loading: false,
+                                        error: error.userMessage || 'Error al cargar ingresos'
+                                    });
+                                }
+                            })
+                        )
                     )
                 )
-            )
-        ),
+            ),
 
-        // Crear ingreso con actualización optimista
-        async createIngreso(ingreso: IngresoCreate): Promise<string> {
-            // Crear ingreso temporal
-            const tempId = `temp_${Date.now()}`;
-            
-            // Obtener nombres desde los stores para mostrar correctamente en la UI
-            const conceptos = conceptoStore.conceptos();
-            const categorias = categoriaStore.categorias();
-            const clientes = clienteStore.clientes();
-            const personas = personaStore.personas();
-            const cuentas = cuentaStore.cuentas();
-            const formasPago = formaPagoStore.formasPago();
-            
-            const tempIngreso: Ingreso = {
-                id: tempId,
-                conceptoId: ingreso.conceptoId,
-                conceptoNombre: conceptos.find(c => c.id === ingreso.conceptoId)?.nombre || '',
-                categoriaId: ingreso.categoriaId,
-                categoriaNombre: categorias.find(c => c.id === ingreso.categoriaId)?.nombre || '',
-                clienteId: ingreso.clienteId,
-                clienteNombre: clientes.find(c => c.id === ingreso.clienteId)?.nombre || '',
-                personaId: ingreso.personaId,
-                personaNombre: personas.find(p => p.id === ingreso.personaId)?.nombre || '',
-                cuentaId: ingreso.cuentaId,
-                cuentaNombre: cuentas.find(c => c.id === ingreso.cuentaId)?.nombre || '',
-                formaPagoId: ingreso.formaPagoId,
-                formaPagoNombre: formasPago.find(f => f.id === ingreso.formaPagoId)?.nombre || '',
-                importe: ingreso.importe,
-                fecha: ingreso.fecha,
-                descripcion: ingreso.descripcion,
-                usuarioId: ''
-            };
-            
-            patchState(store, { 
-                ingresos: [tempIngreso, ...store.ingresos()],
-                totalRecords: store.totalRecords() + 1,
-                loading: true, 
-                error: null 
-            });
+            // Crear ingreso con actualización optimista
+            async createIngreso(ingreso: IngresoCreate, displayData?: Partial<Ingreso>): Promise<string> {
+                const tempId = `temp_${Date.now()}`;
 
-            try {
-                // Enviar solo los IDs al backend (IngresoCreate)
-                const newIngresoId = await firstValueFrom(ingresoService.create(ingreso));
-                
-                // Reemplazar ingreso temporal con el real
+                const tempIngreso: Ingreso = {
+                    id: tempId,
+                    usuarioId: '', // Se llenará en backend o ignorar en visual
+
+                    // IDs del formulario
+                    conceptoId: ingreso.conceptoId,
+                    categoriaId: ingreso.categoriaId,
+                    clienteId: ingreso.clienteId,
+                    personaId: ingreso.personaId,
+                    cuentaId: ingreso.cuentaId,
+                    formaPagoId: ingreso.formaPagoId,
+                    importe: ingreso.importe,
+                    fecha: ingreso.fecha,
+                    descripcion: ingreso.descripcion,
+
+                    // 🔥 LÓGICA MEJORADA:
+                    // 1. Usa el nombre que le pasamos manualmente (displayData)
+                    // 2. Si no, intenta buscarlo en el store
+                    // 3. Si no, cadena vacía (lo que te pasaba antes)
+                    conceptoNombre: displayData?.conceptoNombre || conceptoStore.conceptos().find((c) => c.id === ingreso.conceptoId)?.nombre || '',
+
+                    categoriaNombre: displayData?.categoriaNombre || categoriaStore.categorias().find((c) => c.id === ingreso.categoriaId)?.nombre || '',
+
+                    clienteNombre: displayData?.clienteNombre || clienteStore.clientes().find((c) => c.id === ingreso.clienteId)?.nombre || '',
+
+                    personaNombre: displayData?.personaNombre || personaStore.personas().find((p) => p.id === ingreso.personaId)?.nombre || '',
+
+                    cuentaNombre: displayData?.cuentaNombre || cuentaStore.cuentas().find((c) => c.id === ingreso.cuentaId)?.nombre || '',
+
+                    formaPagoNombre: displayData?.formaPagoNombre || formaPagoStore.formasPago().find((f) => f.id === ingreso.formaPagoId)?.nombre || ''
+                };
+
+                // Actualización Optimista (Inserta arriba del todo)
                 patchState(store, {
-                    ingresos: store.ingresos().map(i => 
-                        i.id === tempId ? { ...tempIngreso, id: newIngresoId } : i
-                    ),
-                    loading: false,
-                    lastUpdated: Date.now(),
-                    searchCache: new Map()
+                    ingresos: [tempIngreso, ...store.ingresos()],
+                    totalRecords: store.totalRecords() + 1,
+                    // No pongas loading: true aquí si no quieres que parpadee la tabla
+                    error: null
                 });
-                return newIngresoId;
-            } catch (error: any) {
-                // Revertir actualización optimista
-                patchState(store, {
-                    ingresos: store.ingresos().filter(i => i.id !== tempId),
-                    totalRecords: store.totalRecords() - 1,
-                    loading: false,
-                    error: error.userMessage || 'Error al crear ingreso'
-                });
-                throw error;
-            }
-        },
 
-        // Actualizar ingreso con actualización optimista
-        async updateIngreso(payload: { id: string; ingreso: Partial<Ingreso> }): Promise<void> {
-            const { id, ingreso } = payload;
-            
-            // Guardar estado anterior
-            const ingresoAnterior = store.ingresos().find(i => i.id === id);
-            
-            // Actualización optimista
-            const ingresos = store.ingresos().map((i) => (i.id === id ? { ...i, ...ingreso } : i));
-            patchState(store, { ingresos, loading: true, error: null });
+                try {
+                    const newIngresoId = await firstValueFrom(ingresoService.create(ingreso));
 
-            try {
-                await firstValueFrom(ingresoService.update(id, ingreso));
-                patchState(store, { 
-                    loading: false,
-                    lastUpdated: Date.now(),
-                    searchCache: new Map()
-                });
-            } catch (error: any) {
-                // Revertir actualización optimista
-                if (ingresoAnterior) {
-                    const revertedIngresos = store.ingresos().map((i) => 
-                        i.id === id ? ingresoAnterior : i
-                    );
-                    patchState(store, { ingresos: revertedIngresos });
-                }
-                
-                patchState(store, {
-                    loading: false,
-                    error: error.userMessage || 'Error al actualizar ingreso'
-                });
-                throw error;
-            }
-        },
-
-        // Eliminar ingreso con actualización optimista
-        deleteIngreso: rxMethod<string>(
-            pipe(
-                tap((id) => {
-                    patchState(store, (state) => ({
-                        ingresos: state.ingresos.filter((i) => i.id !== id),
-                        totalRecords: state.totalRecords - 1,
-                        searchCache: new Map()
-                    }));
-                }),
-                switchMap((id) =>
-                    ingresoService.delete(id).pipe(
-                        tapResponse({
-                            next: () => {
-                                patchState(store, { 
-                                    lastUpdated: Date.now()
-                                });
-                            },
-                            error: (err: ErrorResponse) => {
-                                console.error('[STORE] Error al eliminar ingreso:', err);
-                                patchState(store, { 
-                                    error: err.detail || 'Error al eliminar ingreso' 
-                                });
-                            }
-                        })
-                    )
-                )
-            )
-        ),
-
-        // Buscar ingresos con debounce
-        searchIngresos: rxMethod<string>(
-            pipe(
-                debounceTime(300), // Esperar 300ms después de dejar de escribir
-                tap((searchTerm) => {
+                    // Reemplazar ID temporal con real manteniendo los nombres que ya pusimos
                     patchState(store, {
-                        filters: { ...store.filters(), searchTerm }
+                        ingresos: store.ingresos().map((i) => (i.id === tempId ? { ...tempIngreso, id: newIngresoId } : i)),
+                        lastUpdated: Date.now(),
+                        searchCache: new Map()
                     });
-                })
-            )
-        ),
+                    return newIngresoId;
+                } catch (error: any) {
+                    // Rollback si falla
+                    patchState(store, {
+                        ingresos: store.ingresos().filter((i) => i.id !== tempId),
+                        totalRecords: store.totalRecords() - 1,
+                        error: error.userMessage || 'Error al crear ingreso'
+                    });
+                    throw error;
+                }
+            },
 
-        // Seleccionar ingreso
-        selectIngreso(ingreso: Ingreso | null) {
-            patchState(store, { selectedIngreso: ingreso });
-        },
+            // Actualizar ingreso con actualización optimista
+            async updateIngreso(payload: { id: string; ingreso: Partial<Ingreso> }): Promise<void> {
+                const { id, ingreso } = payload;
 
-        // Actualizar filtros
-        setFilters(filters: Partial<IngresosState['filters']>) {
-            patchState(store, {
-                filters: { ...store.filters(), ...filters }
-            });
-        },
+                // Guardar estado anterior
+                const ingresoAnterior = store.ingresos().find((i) => i.id === id);
 
-        // Limpiar error
-        clearError() {
-            patchState(store, { error: null });
-        }
-    };
+                // Actualización optimista
+                const ingresos = store.ingresos().map((i) => (i.id === id ? { ...i, ...ingreso } : i));
+                patchState(store, { ingresos, loading: true, error: null });
+
+                try {
+                    await firstValueFrom(ingresoService.update(id, ingreso));
+                    patchState(store, {
+                        loading: false,
+                        lastUpdated: Date.now(),
+                        searchCache: new Map()
+                    });
+                } catch (error: any) {
+                    // Revertir actualización optimista
+                    if (ingresoAnterior) {
+                        const revertedIngresos = store.ingresos().map((i) => (i.id === id ? ingresoAnterior : i));
+                        patchState(store, { ingresos: revertedIngresos });
+                    }
+
+                    patchState(store, {
+                        loading: false,
+                        error: error.userMessage || 'Error al actualizar ingreso'
+                    });
+                    throw error;
+                }
+            },
+
+            // Eliminar ingreso con actualización optimista
+            deleteIngreso: rxMethod<string>(
+                pipe(
+                    tap((id) => {
+                        patchState(store, (state) => ({
+                            ingresos: state.ingresos.filter((i) => i.id !== id),
+                            totalRecords: state.totalRecords - 1,
+                            searchCache: new Map()
+                        }));
+                    }),
+                    switchMap((id) =>
+                        ingresoService.delete(id).pipe(
+                            tapResponse({
+                                next: () => {
+                                    patchState(store, {
+                                        lastUpdated: Date.now()
+                                    });
+                                },
+                                error: (err: ErrorResponse) => {
+                                    console.error('[STORE] Error al eliminar ingreso:', err);
+                                    patchState(store, {
+                                        error: err.detail || 'Error al eliminar ingreso'
+                                    });
+                                }
+                            })
+                        )
+                    )
+                )
+            ),
+
+            // Buscar ingresos con debounce
+            searchIngresos: rxMethod<string>(
+                pipe(
+                    debounceTime(300), // Esperar 300ms después de dejar de escribir
+                    tap((searchTerm) => {
+                        patchState(store, {
+                            filters: { ...store.filters(), searchTerm }
+                        });
+                    })
+                )
+            ),
+
+            // Seleccionar ingreso
+            selectIngreso(ingreso: Ingreso | null) {
+                patchState(store, { selectedIngreso: ingreso });
+            },
+
+            // Actualizar filtros
+            setFilters(filters: Partial<IngresosState['filters']>) {
+                patchState(store, {
+                    filters: { ...store.filters(), ...filters }
+                });
+            },
+
+            // Limpiar error
+            clearError() {
+                patchState(store, { error: null });
+            }
+        };
     })
 );

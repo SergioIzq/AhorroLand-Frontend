@@ -65,18 +65,41 @@ export const TraspasosStore = signalStore(
         ),
 
 
-        // Crear traspaso
+        // Crear traspaso con actualización optimista
         async createTraspaso(traspaso: TraspasoCreate): Promise<string> {
-            patchState(store, { loading: true, error: null });
+            const tempId = `temp_${Date.now()}`;
+            const tempTraspaso: Traspaso = {
+                id: tempId,
+                cuentaOrigenId: traspaso.cuentaOrigenId,
+                cuentaOrigenNombre: '',
+                cuentaDestinoId: traspaso.cuentaDestinoId,
+                cuentaDestinoNombre: '',
+                fecha: traspaso.fecha,
+                importe: traspaso.importe,
+                descripcion: traspaso.descripcion,
+                usuarioId: ''
+            };
+
+            patchState(store, {
+                traspasos: [tempTraspaso, ...store.traspasos()],
+                totalRecords: store.totalRecords() + 1,
+                loading: true,
+                error: null
+            });
 
             try {
                 const newTraspasoId = await firstValueFrom(traspasoService.create(traspaso));
-                // El backend solo devuelve el ID, no el objeto completo
-                // Necesitaremos recargar la lista o hacer un fetch del traspaso por ID
-                patchState(store, { loading: false });
+                patchState(store, {
+                    traspasos: store.traspasos().map(t =>
+                        t.id === tempId ? { ...tempTraspaso, id: newTraspasoId } : t
+                    ),
+                    loading: false
+                });
                 return newTraspasoId;
             } catch (error: any) {
                 patchState(store, {
+                    traspasos: store.traspasos().filter(t => t.id !== tempId),
+                    totalRecords: store.totalRecords() - 1,
                     loading: false,
                     error: error.userMessage || 'Error al crear traspaso'
                 });
@@ -84,18 +107,24 @@ export const TraspasosStore = signalStore(
             }
         },
 
-        // Actualizar traspaso
+        // Actualizar traspaso con actualización optimista
         async updateTraspaso(payload: { id: string; traspaso: Partial<Traspaso> }): Promise<void> {
             const { id, traspaso } = payload;
-            patchState(store, { loading: true, error: null });
+            const traspasoAnterior = store.traspasos().find(t => t.id === id);
+
+            const traspasos = store.traspasos().map((t) => (t.id === id ? { ...t, ...traspaso } : t));
+            patchState(store, { traspasos, loading: true, error: null });
 
             try {
                 await firstValueFrom(traspasoService.update(id, traspaso));
-
-                // Actualizar estado local
-                const traspasos = store.traspasos().map((g) => (g.id === id ? { ...g, ...traspaso } : g));
-                patchState(store, { traspasos, loading: false });
+                patchState(store, { loading: false });
             } catch (error: any) {
+                if (traspasoAnterior) {
+                    const revertedTraspasos = store.traspasos().map(t =>
+                        t.id === id ? traspasoAnterior : t
+                    );
+                    patchState(store, { traspasos: revertedTraspasos });
+                }
                 patchState(store, {
                     loading: false,
                     error: error.userMessage || 'Error al actualizar traspaso'
@@ -106,24 +135,34 @@ export const TraspasosStore = signalStore(
 
         deleteTraspaso: rxMethod<string>(
             pipe(
-                tap((id) => {
-                    // Eliminación optimista
-                    const filteredTraspasos = store.traspasos().filter((t) => t.id !== id);
-                    patchState(store, { traspasos: filteredTraspasos });
-                }),
-                switchMap((id) =>
-                    traspasoService.delete(id).pipe(
+                switchMap((id) => {
+                    const traspasoEliminado = store.traspasos().find(t => t.id === id);
+                    const totalAnterior = store.totalRecords();
+
+                    patchState(store, {
+                        traspasos: store.traspasos().filter(t => t.id !== id),
+                        totalRecords: store.totalRecords() - 1
+                    });
+
+                    return traspasoService.delete(id).pipe(
                         tapResponse({
                             next: () => {
-                                // Eliminación exitosa
                                 patchState(store, { error: null });
                             },
-                            error: (error: Error) => {
-                                patchState(store, { error: error.message });
+                            error: (error: any) => {
+                                if (traspasoEliminado) {
+                                    patchState(store, {
+                                        traspasos: [...store.traspasos(), traspasoEliminado],
+                                        totalRecords: totalAnterior,
+                                        error: error.message || 'Error al eliminar traspaso'
+                                    });
+                                } else {
+                                    patchState(store, { error: error.message || 'Error al eliminar traspaso' });
+                                }
                             }
                         })
-                    )
-                )
+                    );
+                })
             )
         )
     }))

@@ -67,27 +67,71 @@ export const IngresosProgramadosStore = signalStore(
 
         createIngreso: rxMethod<any>(
             pipe(
-                tap(() => patchState(store, { loading: true })),
-                switchMap((ingreso) =>
-                    service.create(ingreso).pipe(
+                switchMap((ingreso) => {
+                    const tempId = `temp_${Date.now()}`;
+                    const tempIngreso: IngresoProgramado = {
+                        id: tempId,
+                        conceptoId: ingreso.conceptoId,
+                        conceptoNombre: '',
+                        categoriaId: ingreso.categoriaId,
+                        categoriaNombre: '',
+                        clienteId: ingreso.clienteId,
+                        clienteNombre: '',
+                        personaId: ingreso.personaId,
+                        personaNombre: '',
+                        cuentaId: ingreso.cuentaId,
+                        cuentaNombre: '',
+                        formaPagoId: ingreso.formaPagoId,
+                        formaPagoNombre: '',
+                        importe: ingreso.importe,
+                        descripcion: ingreso.descripcion,
+                        fechaEjecucion: ingreso.fechaEjecucion,
+                        frecuencia: ingreso.frecuencia,
+                        activo: ingreso.activo ?? true,
+                        usuarioId: ''
+                    };
+
+                    patchState(store, {
+                        ingresosProgramados: [tempIngreso, ...store.ingresosProgramados()],
+                        totalRecords: store.totalRecords() + 1,
+                        loading: true
+                    });
+
+                    return service.create(ingreso).pipe(
                         tapResponse({
-                            next: () => {
-                                patchState(store, { loading: false, error: null });
+                            next: (id: string) => {
+                                patchState(store, {
+                                    ingresosProgramados: store.ingresosProgramados().map(i =>
+                                        i.id === tempId ? { ...tempIngreso, id } : i
+                                    ),
+                                    loading: false,
+                                    error: null
+                                });
                             },
                             error: (error: any) => {
                                 patchState(store, {
+                                    ingresosProgramados: store.ingresosProgramados().filter(i => i.id !== tempId),
+                                    totalRecords: store.totalRecords() - 1,
                                     loading: false,
                                     error: error.message || 'Error al crear ingreso programado'
                                 });
                             }
                         })
-                    )
-                )
+                    );
+                })
             )
         ),
 
         async update(id: string, ingreso: Partial<IngresoProgramado>): Promise<string> {
-            patchState(store, { loading: true });
+            const ingresoAnterior = store.ingresosProgramados().find(i => i.id === id);
+
+            patchState(store, {
+                ingresosProgramados: store.ingresosProgramados().map(i =>
+                    i.id === id ? { ...i, ...ingreso } : i
+                ),
+                loading: true
+            });
+
             try {
                 const response = await firstValueFrom(service.update(id, ingreso));
 
@@ -95,8 +139,15 @@ export const IngresosProgramadosStore = signalStore(
                     patchState(store, { loading: false });
                     return response.value;
                 }
-                throw new Error(response.error?.message || 'Error al actualizar proveedor');
+                throw new Error(response.error?.message || 'Error al actualizar ingreso programado');
             } catch (err) {
+                if (ingresoAnterior) {
+                    patchState(store, {
+                        ingresosProgramados: store.ingresosProgramados().map(i =>
+                            i.id === id ? ingresoAnterior : i
+                        )
+                    });
+                }
                 patchState(store, { loading: false });
                 throw err;
             }
@@ -104,24 +155,36 @@ export const IngresosProgramadosStore = signalStore(
 
         deleteIngreso: rxMethod<string>(
             pipe(
-                tap((id) => {
-                    const ingresos = store.ingresosProgramados().filter((i) => i.id !== id);
-                    patchState(store, { ingresosProgramados: ingresos });
-                }),
-                switchMap((id) =>
-                    service.delete(id).pipe(
+                switchMap((id) => {
+                    const ingresoEliminado = store.ingresosProgramados().find(i => i.id === id);
+                    const totalAnterior = store.totalRecords();
+
+                    patchState(store, {
+                        ingresosProgramados: store.ingresosProgramados().filter(i => i.id !== id),
+                        totalRecords: store.totalRecords() - 1
+                    });
+
+                    return service.delete(id).pipe(
                         tapResponse({
                             next: () => {
                                 patchState(store, { error: null });
                             },
                             error: (error: any) => {
-                                patchState(store, {
-                                    error: error.message || 'Error al eliminar ingreso programado'
-                                });
+                                if (ingresoEliminado) {
+                                    patchState(store, {
+                                        ingresosProgramados: [...store.ingresosProgramados(), ingresoEliminado],
+                                        totalRecords: totalAnterior,
+                                        error: error.message || 'Error al eliminar ingreso programado'
+                                    });
+                                } else {
+                                    patchState(store, {
+                                        error: error.message || 'Error al eliminar ingreso programado'
+                                    });
+                                }
                             }
                         })
-                    )
-                )
+                    );
+                })
             )
         ),
 
