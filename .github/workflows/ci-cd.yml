@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_IMAGE: sergioizqdev/ahorroland-frontend
+  DOCKER_IMAGE: sergioizqdev/kash-frontend
   NODE_VERSION: '22'
 
 jobs:

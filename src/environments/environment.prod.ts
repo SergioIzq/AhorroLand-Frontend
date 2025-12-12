@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://ahorrolandbackend.sergioizq.com/api'
+    apiUrl: 'https://kashbackend.sergioizq.com/api'
 };
