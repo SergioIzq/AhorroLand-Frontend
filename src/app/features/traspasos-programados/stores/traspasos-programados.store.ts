@@ -295,7 +295,6 @@ export const TraspasosProgramadosStore = signalStore(
 
     withHooks({
         onInit(store) {
-            console.log('TraspasosProgramadosStore initialized');
         }
     })
 );

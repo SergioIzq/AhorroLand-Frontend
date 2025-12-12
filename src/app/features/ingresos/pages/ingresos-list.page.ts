@@ -211,7 +211,6 @@ export class IngresosListPage extends BasePageComponent implements OnDestroy {
         effect(() => {
             const lastUpdate = this.ingresosStore.lastUpdated();
             if (lastUpdate) {
-                console.log('✅ Ingresos sincronizados automáticamente en', new Date(lastUpdate).toISOString());
             }
         });
     }

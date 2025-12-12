@@ -58,12 +58,6 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
  * Extrae el Título y el Mensaje basándose en tu estructura Result backend
  */
 function extractErrorData(httpError: HttpErrorResponse): { title: string, message: string } {
-    // Debug: Log para ver qué está llegando (puedes comentarlo después)
-    console.log('🔍 Error interceptado:', {
-        status: httpError.status,
-        error: httpError.error,
-        type: typeof httpError.error
-    });
     
     // CASO 1: Tu estructura Backend (.NET Result Pattern)
     // Verificamos si la respuesta tiene la forma { isFailure: true, error: { ... } }
@@ -73,7 +67,6 @@ function extractErrorData(httpError: HttpErrorResponse): { title: string, messag
     if (apiResult && typeof apiResult === 'object') {
         // Verificar si tiene la estructura de Result con error
         if (apiResult.isFailure && apiResult.error) {
-            console.log('✅ Detectado Result Pattern del backend:', apiResult.error);
             return {
                 title: apiResult.error.name || 'Error',
                 message: apiResult.error.message || 'Ocurrió un error inesperado.'
@@ -82,7 +75,6 @@ function extractErrorData(httpError: HttpErrorResponse): { title: string, messag
         
         // A veces el error puede venir directamente sin isFailure (por ejemplo, en algunos middlewares)
         if (apiResult.error && apiResult.error.code && apiResult.error.message) {
-            console.log('✅ Detectado error directo del backend');
             return {
                 title: apiResult.error.name || 'Error',
                 message: apiResult.error.message
@@ -90,8 +82,6 @@ function extractErrorData(httpError: HttpErrorResponse): { title: string, messag
         }
     }
     
-    console.log('⚠️ No se detectó Result Pattern, apiResult:', apiResult);
-
     // CASO 2: ValidationProblemDetails nativo de .NET (Fallback)
     // Si por alguna razón el middleware global falló y .NET devolvió sus validaciones por defecto
     if (httpError.error?.errors) {
@@ -120,7 +110,6 @@ function extractErrorData(httpError: HttpErrorResponse): { title: string, messag
 
     // CASO 4: Fallbacks Genéricos basados en Status Code
     // (Si el backend explotó tan fuerte que no mandó JSON, o es un error de red)
-    console.log('⚠️ Usando fallback genérico para status:', httpError.status);
     switch (httpError.status) {
         case 400: return { title: 'Petición Inválida', message: 'Los datos enviados son incorrectos.' };
         case 401: return { title: 'Sesión Expirada', message: 'Por favor, inicia sesión nuevamente.' };

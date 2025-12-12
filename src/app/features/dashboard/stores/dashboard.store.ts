@@ -155,7 +155,6 @@ export const DashboardStore = signalStore(
                 const autoRefresh = store.autoRefreshEnabled();
                 
                 if (gastosUpdated && autoRefresh) {
-                    console.log('[DASHBOARD] Detectado cambio en gastos, sincronizando...');
                     // Pequeño delay para permitir que el backend procese
                     setTimeout(() => store.refresh(true), 100);
                 }
@@ -167,7 +166,6 @@ export const DashboardStore = signalStore(
                 const autoRefresh = store.autoRefreshEnabled();
                 
                 if (ingresosUpdated && autoRefresh) {
-                    console.log('[DASHBOARD] Detectado cambio en ingresos, sincronizando...');
                     setTimeout(() => store.refresh(true), 100);
                 }
             });

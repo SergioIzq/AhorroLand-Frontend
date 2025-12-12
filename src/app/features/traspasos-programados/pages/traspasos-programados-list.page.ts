@@ -257,7 +257,6 @@ export class TraspasosProgramadosListPage {
             const lastUpdate = this.traspasosStore.lastUpdated();
             
             if (syncing && lastUpdate > 0) {
-                console.log('🔄 Sincronizando traspasos programados (47ms API response)');
             }
         });
 

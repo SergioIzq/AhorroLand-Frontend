@@ -213,7 +213,6 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
         effect(() => {
             const lastUpdated = this.gastosStore.lastUpdated();
             if (lastUpdated) {
-                console.log('[GASTOS] Datos sincronizados instantáneamente:', new Date(lastUpdated));
             }
         });
     }
@@ -239,7 +238,6 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
             params['timestamp'] = Date.now();
         }
 
-        console.log('[GASTOS] Reloading con params:', params);
         this.gastosStore.loadGastosPaginated(params);
     }
 

@@ -163,7 +163,6 @@ export class CategoriasListPage extends BasePageComponent {
             const lastUpdated = this.categoriaStore.lastUpdated();
             if (lastUpdated) {
                 // Los datos se han actualizado, la UI ya se sincronizó automáticamente
-                console.log('[CATEGORIAS] Datos sincronizados:', new Date(lastUpdated));
             }
         });
     }
