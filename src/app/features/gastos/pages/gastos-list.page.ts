@@ -277,20 +277,19 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
     }
 
     async onSaveGasto(gasto: Partial<Gasto>) {
-        const gastoActual = this.currentGasto();
-
-        if (gastoActual.id) {
+        if (gasto.id) {
+            // Actualizar gasto existente
             try {
-                await this.gastosStore.updateGasto({ id: gastoActual.id, gasto });
+                await this.gastosStore.updateGasto({ id: gasto.id, gasto });
                 this.showSuccess('Gasto actualizado correctamente');
                 this.gastoDialog.set(false);
                 this.currentGasto.set({});
-                // No es necesario reloadGastos() - actualización optimista ya lo hizo
+                // No reloadGastos() - optimistic update already syncs UI
             } catch (error: any) {
                 this.showError(error.userMessage || 'Error al actualizar el gasto');
             }
         } else {
-            const gastoCreate: GastoCreate = {
+            var gastoCreate: GastoCreate = {
                 conceptoId: gasto.conceptoId!,
                 categoriaId: gasto.categoriaId!,
                 proveedorId: gasto.proveedorId!,
@@ -302,14 +301,19 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
                 cuentaId: gasto.cuentaId!
             };
 
-            try {
-                await this.gastosStore.createGasto(gastoCreate);
-                this.showSuccess('Gasto creado correctamente');
-                // No es necesario reloadGastos() - actualización optimista ya lo hizo
-            } catch (error: any) {
-                this.showError(error.userMessage || 'Error al crear el gasto');
-            }
+            const displayData: Partial<Gasto> = {
+                conceptoNombre: gasto.conceptoNombre,
+                categoriaNombre: gasto.categoriaNombre,
+                cuentaNombre: gasto.cuentaNombre,
+                formaPagoNombre: gasto.formaPagoNombre,
+                proveedorNombre: gasto.proveedorNombre,
+                personaNombre: gasto.personaNombre
+            };
 
+            this.gastosStore.createGasto(gastoCreate, displayData).then(() => {
+                this.showSuccess('Gasto creado correctamente');
+            });
+            
             this.gastoDialog.set(false);
             this.currentGasto.set({});
         }

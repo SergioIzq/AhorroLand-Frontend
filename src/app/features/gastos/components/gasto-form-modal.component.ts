@@ -106,6 +106,8 @@ interface GastoFormData extends Omit<Partial<Gasto>, 'fecha'> {
                         currency="EUR"
                         locale="es-ES"
                         [min]="0"
+                        [minFractionDigits]="2"
+                        [maxFractionDigits]="2"
                         placeholder="0,00 €"
                         inputStyleClass="text-right font-bold text-xl text-red-600"
                         class="w-full"
