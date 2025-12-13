@@ -18,10 +18,23 @@ import { SkeletonLoaderComponent, SkeletonType } from '../skeleton-loader.compon
             margin: 0;
             padding: 0;
         }
+
+        /* Responsive toast en móvil */
+        @media screen and (max-width: 640px) {
+            :host ::ng-deep .p-toast {
+                width: 90vw !important;
+                left: 5vw !important;
+                right: 5vw !important;
+            }
+
+            :host ::ng-deep .p-toast-message {
+                margin: 0 0 1rem 0 !important;
+            }
+        }
     `],
     template: `
-        <p-toast></p-toast>
-        <p-confirmdialog [style]="{ width: '450px' }" />
+        <p-toast [breakpoints]="{'640px': {width: '90vw', left: '5vw', right: '5vw'}}"></p-toast>
+        <p-confirmdialog [style]="{ width: '450px' }" [breakpoints]="{'640px': {width: '90vw'}}" />
         
         @if (loading) {
             <app-skeleton-loader [type]="skeletonType"></app-skeleton-loader>

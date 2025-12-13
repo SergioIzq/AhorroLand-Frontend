@@ -23,11 +23,29 @@ import { GastoProgramadoFormModalComponent } from '../components/gasto-programad
     imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TableModule, ToolbarModule, InputIconModule, IconFieldModule, SkeletonModule, TagModule, BasePageTemplateComponent, GastoProgramadoFormModalComponent],
     providers: [MessageService, ConfirmationService],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    styles: [`
+        /* Toolbar responsive en móvil */
+        @media screen and (max-width: 768px) {
+            :host ::ng-deep .p-toolbar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            :host ::ng-deep .p-toolbar-group-start,
+            :host ::ng-deep .p-toolbar-group-end {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            
+            :host ::ng-deep .p-toolbar-group-start {
+                margin-bottom: 0.5rem;
+            }
+        }
+    `],
     template: `
         <app-base-page-template [loading]="gastosStore.loading()" [skeletonType]="'table'">
             <div class="card surface-ground px-4 py-5 md:px-6 lg:px-8">
                 <div class="surface-card shadow-2 border-round p-6">
-                    <p-toast></p-toast>
 
                     <p-toolbar styleClass="mb-6 gap-2 p-6">
                         <ng-template #start>
@@ -57,11 +75,11 @@ import { GastoProgramadoFormModalComponent } from '../components/gasto-programad
                         dataKey="id"
                     >
                         <ng-template #caption>
-                            <div class="flex items-center justify-between py-3 px-4">
+                            <div class="flex flex-col md:flex-row items-center justify-between gap-3 py-3 px-4">
                                 <h5 class="m-0 font-semibold text-xl">Gestión de Gastos Programados</h5>
-                                <p-iconfield>
+                                <p-iconfield class="w-full md:w-auto">
                                     <p-inputicon styleClass="pi pi-search" />
-                                    <input pInputText type="text" [(ngModel)]="searchTerm" (input)="onSearchChange($event)" placeholder="Buscar gastos programados..." />
+                                    <input pInputText type="text" [(ngModel)]="searchTerm" (input)="onSearchChange($event)" placeholder="Buscar gastos programados..." class="w-full" />
                                 </p-iconfield>
                             </div>
                         </ng-template>

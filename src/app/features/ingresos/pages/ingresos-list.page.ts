@@ -22,6 +22,25 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
     standalone: true,
     imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TableModule, ToolbarModule, TagModule, InputIconModule, IconFieldModule, SkeletonModule, IngresoFormModalComponent, BasePageTemplateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    styles: [`
+        /* Toolbar responsive en móvil */
+        @media screen and (max-width: 768px) {
+            :host ::ng-deep .p-toolbar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            :host ::ng-deep .p-toolbar-group-start,
+            :host ::ng-deep .p-toolbar-group-end {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            
+            :host ::ng-deep .p-toolbar-group-start {
+                margin-bottom: 0.5rem;
+            }
+        }
+    `],
     template: `
         <app-base-page-template [loading]="ingresosStore.loading() && ingresosStore.ingresos().length === 0" [skeletonType]="'table'">
             <div class="card surface-ground px-4 py-5 md:px-6 lg:px-8">
@@ -61,11 +80,11 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         [sortOrder]="-1"
                     >
                         <ng-template #caption>
-                            <div class="flex items-center justify-between py-3 px-4">
+                            <div class="flex flex-col md:flex-row items-center justify-between gap-3 py-3 px-4">
                                 <h5 class="m-0 font-semibold text-xl">Gestión de Ingresos</h5>
-                                <p-iconfield>
+                                <p-iconfield class="w-full md:w-auto">
                                     <p-inputicon styleClass="pi pi-search" />
-                                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+                                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." class="w-full" />
                                 </p-iconfield>
                             </div>
                         </ng-template>
