@@ -49,7 +49,7 @@
         "/api/clientes"
       ],
       "cacheConfig": {
-        "strategy": "performance",
+        "strategy": "freshness",
         "maxSize": 100,
         "maxAge": "1d",
         "timeout": "5s"
