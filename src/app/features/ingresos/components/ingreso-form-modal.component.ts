@@ -361,7 +361,6 @@ export class IngresoFormModalComponent {
             // Modo creación
             this.isEditMode.set(false);
             this.formData = {
-                importe: 0,
                 fecha: new Date(),
                 descripcion: ''
             };

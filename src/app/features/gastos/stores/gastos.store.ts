@@ -72,13 +72,13 @@ export const GastosStore = signalStore(
             const gastos = store.gastos();
             return Array.isArray(gastos) ? gastos.length : 0;
         }),
-        
+
         // Indica si hay datos cargados
         hasData: computed(() => {
             const gastos = store.gastos();
             return Array.isArray(gastos) && gastos.length > 0;
         }),
-        
+
         // Gastos filtrados por término de búsqueda
         filteredGastos: computed(() => {
             const gastos = store.gastos();
@@ -120,7 +120,7 @@ export const GastosStore = signalStore(
             return [...gastos].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).slice(0, 5);
         })
     })),
-    
+
     withComputed((store) => ({
         // Estado de sincronización (loading pero con datos previos)
         isSyncing: computed(() => store.loading() && store.hasData())
@@ -136,256 +136,253 @@ export const GastosStore = signalStore(
         const formaPagoStore = inject(FormaPagoStore);
 
         return {
-        // Cargar gastos
-        loadGastos: rxMethod<void>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap(() =>
-                    gastoService.getAllGastos().pipe(
-                        tapResponse({
-                            next: (gastos) => {
-                                patchState(store, {
-                                    gastos,
-                                    loading: false,
-                                    error: null
-                                });
-                            },
-                            error: (error: any) => {
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al cargar gastos'
-                                });
-                            }
-                        })
+            // Cargar gastos
+            loadGastos: rxMethod<void>(
+                pipe(
+                    tap(() => patchState(store, { loading: true, error: null })),
+                    switchMap(() =>
+                        gastoService.getAllGastos().pipe(
+                            tapResponse({
+                                next: (gastos) => {
+                                    patchState(store, {
+                                        gastos,
+                                        loading: false,
+                                        error: null
+                                    });
+                                },
+                                error: (error: any) => {
+                                    patchState(store, {
+                                        loading: false,
+                                        error: error.userMessage || 'Error al cargar gastos'
+                                    });
+                                }
+                            })
+                        )
                     )
                 )
-            )
-        ),
+            ),
 
-        // Cargar gastos con paginación, búsqueda y ordenamiento
-        loadGastosPaginated: rxMethod<{
-            page: number;
-            pageSize: number;
-            searchTerm?: string;
-            sortColumn?: string;
-            sortOrder?: string;
-            timestamp?: number;
-        }>(
-            pipe(
-                tap(() => {
-                    patchState(store, { loading: true, error: null });
-                }),
-                switchMap(({ page, pageSize, searchTerm, sortColumn, sortOrder, timestamp }) =>
-                    gastoService.getGastos(page, pageSize, searchTerm, sortColumn, sortOrder, timestamp).pipe(
-                        tapResponse({
-                            next: (response) => {
-                                patchState(store, {
-                                    gastos: response.items,
-                                    totalRecords: response.totalCount,
-                                    loading: false,
-                                    error: null,
-                                    lastUpdated: Date.now(),
-                                    searchCache: new Map() // Invalidar caché
-                                });
-                            },
-                            error: (error: any) => {
-                                console.error('[STORE] Error al cargar gastos:', error);
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al cargar gastos'
-                                });
-                            }
-                        })
+            // Cargar gastos con paginación, búsqueda y ordenamiento
+            loadGastosPaginated: rxMethod<{
+                page: number;
+                pageSize: number;
+                searchTerm?: string;
+                sortColumn?: string;
+                sortOrder?: string;
+                timestamp?: number;
+            }>(
+                pipe(
+                    tap(() => {
+                        patchState(store, { loading: true, error: null });
+                    }),
+                    switchMap(({ page, pageSize, searchTerm, sortColumn, sortOrder, timestamp }) =>
+                        gastoService.getGastos(page, pageSize, searchTerm, sortColumn, sortOrder, timestamp).pipe(
+                            tapResponse({
+                                next: (response) => {
+                                    patchState(store, {
+                                        gastos: response.items,
+                                        totalRecords: response.totalCount,
+                                        loading: false,
+                                        error: null,
+                                        lastUpdated: Date.now(),
+                                        searchCache: new Map() // Invalidar caché
+                                    });
+                                },
+                                error: (error: any) => {
+                                    console.error('[STORE] Error al cargar gastos:', error);
+                                    patchState(store, {
+                                        loading: false,
+                                        error: error.userMessage || 'Error al cargar gastos'
+                                    });
+                                }
+                            })
+                        )
                     )
                 )
-            )
-        ),
+            ),
 
-        // Cargar gastos por período
-        loadGastosPorPeriodo: rxMethod<{ fechaInicio: string; fechaFin: string }>(
-            pipe(
-                tap(() => patchState(store, { loading: true, error: null })),
-                switchMap(({ fechaInicio, fechaFin }) =>
-                    gastoService.getGastosPorPeriodo(fechaInicio, fechaFin).pipe(
-                        tapResponse({
-                            next: (gastos) => {
-                                patchState(store, {
-                                    gastos,
-                                    loading: false,
-                                    filters: { ...store.filters(), fechaInicio, fechaFin }
-                                });
-                            },
-                            error: (error: any) => {
-                                patchState(store, {
-                                    loading: false,
-                                    error: error.userMessage || 'Error al cargar gastos'
-                                });
-                            }
-                        })
+            // Cargar gastos por período
+            loadGastosPorPeriodo: rxMethod<{ fechaInicio: string; fechaFin: string }>(
+                pipe(
+                    tap(() => patchState(store, { loading: true, error: null })),
+                    switchMap(({ fechaInicio, fechaFin }) =>
+                        gastoService.getGastosPorPeriodo(fechaInicio, fechaFin).pipe(
+                            tapResponse({
+                                next: (gastos) => {
+                                    patchState(store, {
+                                        gastos,
+                                        loading: false,
+                                        filters: { ...store.filters(), fechaInicio, fechaFin }
+                                    });
+                                },
+                                error: (error: any) => {
+                                    patchState(store, {
+                                        loading: false,
+                                        error: error.userMessage || 'Error al cargar gastos'
+                                    });
+                                }
+                            })
+                        )
                     )
                 )
-            )
-        ),
+            ),
 
-        // Crear gasto con actualización optimista
-        async createGasto(gasto: GastoCreate): Promise<string> {
-            // Crear gasto temporal para actualización optimista
-            const tempId = `temp_${Date.now()}`;
-            
-            // Obtener nombres desde los stores para mostrar correctamente en la UI
-            const conceptos = conceptoStore.conceptos();
-            const categorias = categoriaStore.categorias();
-            const proveedores = proveedorStore.proveedores();
-            const personas = personaStore.personas();
-            const cuentas = cuentaStore.cuentas();
-            const formasPago = formaPagoStore.formasPago();
-            
-            const tempGasto: Gasto = {
-                id: tempId,
-                conceptoId: gasto.conceptoId,
-                conceptoNombre: conceptos.find(c => c.id === gasto.conceptoId)?.nombre || '',
-                categoriaId: gasto.categoriaId,
-                categoriaNombre: categorias.find(c => c.id === gasto.categoriaId)?.nombre || '',
-                proveedorId: gasto.proveedorId,
-                proveedorNombre: proveedores.find(p => p.id === gasto.proveedorId)?.nombre || '',
-                personaId: gasto.personaId,
-                personaNombre: personas.find(p => p.id === gasto.personaId)?.nombre || '',
-                cuentaId: gasto.cuentaId,
-                cuentaNombre: cuentas.find(c => c.id === gasto.cuentaId)?.nombre || '',
-                formaPagoId: gasto.formaPagoId,
-                formaPagoNombre: formasPago.find(f => f.id === gasto.formaPagoId)?.nombre || '',
-                importe: gasto.importe,
-                fecha: gasto.fecha,
-                descripcion: gasto.descripcion,
-                usuarioId: ''
-            };
-            
-            patchState(store, { 
-                gastos: [tempGasto, ...store.gastos()],
-                totalRecords: store.totalRecords() + 1,
-                loading: true, 
-                error: null 
-            });
+            // Crear gasto con actualización optimista
+            async createGasto(gasto: GastoCreate, displayData?: Partial<Gasto>): Promise<string> {
+                const tempId = `temp_${Date.now()}`;
 
-            try {
-                // Enviar solo los IDs al backend (GastoCreate)
-                const newGastoId = await firstValueFrom(gastoService.create(gasto));
-                
-                // Reemplazar gasto temporal con el real
+                const tempGasto: Gasto = {
+                    id: tempId,
+                    usuarioId: '', // Se llenará en backend o ignorar en visual
+
+                    // IDs del formulario
+                    conceptoId: gasto.conceptoId,
+                    categoriaId: gasto.categoriaId,
+                    proveedorId: gasto.proveedorId,
+                    personaId: gasto.personaId,
+                    cuentaId: gasto.cuentaId,
+                    formaPagoId: gasto.formaPagoId,
+                    importe: gasto.importe,
+                    fecha: gasto.fecha,
+                    descripcion: gasto.descripcion,
+
+                    // 🔥 LÓGICA MEJORADA:
+                    // 1. Usa el nombre que le pasamos manualmente (displayData)
+                    // 2. Si no, intenta buscarlo en el store
+                    // 3. Si no, cadena vacía (lo que te pasaba antes)
+                    conceptoNombre: displayData?.conceptoNombre || conceptoStore.conceptos().find((c) => c.id === gasto.conceptoId)?.nombre || '',
+
+                    categoriaNombre: displayData?.categoriaNombre || categoriaStore.categorias().find((c) => c.id === gasto.categoriaId)?.nombre || '',
+
+                    proveedorNombre: displayData?.proveedorNombre || proveedorStore.proveedores().find((c) => c.id === gasto.proveedorId)?.nombre || '',
+
+                    personaNombre: displayData?.personaNombre || personaStore.personas().find((p) => p.id === gasto.personaId)?.nombre || '',
+
+                    cuentaNombre: displayData?.cuentaNombre || cuentaStore.cuentas().find((c) => c.id === gasto.cuentaId)?.nombre || '',
+
+                    formaPagoNombre: displayData?.formaPagoNombre || formaPagoStore.formasPago().find((f) => f.id === gasto.formaPagoId)?.nombre || ''
+                };
+
+                // Actualización Optimista (Inserta arriba del todo)
                 patchState(store, {
-                    gastos: store.gastos().map(g => 
-                        g.id === tempId ? { ...tempGasto, id: newGastoId } : g
-                    ),
-                    loading: false,
-                    lastUpdated: Date.now(),
-                    searchCache: new Map() // Invalidar caché
+                    gastos: [tempGasto, ...store.gastos()],
+                    totalRecords: store.totalRecords() + 1,
+                    // No pongas loading: true aquí si no quieres que parpadee la tabla
+                    error: null
                 });
-                return newGastoId;
-            } catch (error: any) {
-                // Revertir actualización optimista
-                patchState(store, {
-                    gastos: store.gastos().filter(g => g.id !== tempId),
-                    totalRecords: store.totalRecords() - 1,
-                    loading: false,
-                    error: error.userMessage || 'Error al crear gasto'
-                });
-                throw error;
-            }
-        },
 
-        // Actualizar gasto con actualización optimista
-        async updateGasto(payload: { id: string; gasto: Partial<Gasto> }): Promise<void> {
-            const { id, gasto } = payload;
-            
-            // Guardar estado anterior para reversión
-            const gastoAnterior = store.gastos().find(g => g.id === id);
-            
-            // Actualización optimista
-            const gastos = store.gastos().map((g) => (g.id === id ? { ...g, ...gasto } : g));
-            patchState(store, { gastos, loading: true, error: null });
+                try {
+                    const newGastoId = await firstValueFrom(gastoService.create(gasto));
 
-            try {
-                await firstValueFrom(gastoService.update(id, gasto));
-                patchState(store, { 
-                    loading: false,
-                    lastUpdated: Date.now(),
-                    searchCache: new Map() // Invalidar caché
-                });
-            } catch (error: any) {
-                // Revertir actualización optimista
-                if (gastoAnterior) {
-                    const revertedGastos = store.gastos().map((g) => 
-                        g.id === id ? gastoAnterior : g
-                    );
-                    patchState(store, { gastos: revertedGastos });
-                }
-                
-                patchState(store, {
-                    loading: false,
-                    error: error.userMessage || 'Error al actualizar gasto'
-                });
-                throw error;
-            }
-        },
-
-        // Eliminar gasto con actualización optimista
-        deleteGasto: rxMethod<string>(
-            pipe(
-                tap((id) => {
-                    patchState(store, (state) => ({
-                        gastos: state.gastos.filter((g) => g.id !== id),
-                        totalRecords: state.totalRecords - 1,
-                        searchCache: new Map() // Invalidar caché
-                    }));
-                }),
-                switchMap((id) =>
-                    gastoService.delete(id).pipe(
-                        tapResponse({
-                            next: () => {
-                                patchState(store, { 
-                                    lastUpdated: Date.now()
-                                });
-                            },
-                            error: (err: ErrorResponse) => {
-                                console.error('[STORE] Error al eliminar gasto:', err);
-                                patchState(store, { 
-                                    error: err.detail || 'Error al eliminar gasto' 
-                                });
-                            }
-                        })
-                    )
-                )
-            )
-        ),
-        
-        // Buscar gastos con debounce
-        searchGastos: rxMethod<string>(
-            pipe(
-                debounceTime(300), // Esperar 300ms después de dejar de escribir
-                tap((searchTerm) => {
+                    // Reemplazar ID temporal con real manteniendo los nombres que ya pusimos
                     patchState(store, {
-                        filters: { ...store.filters(), searchTerm }
+                        gastos: store.gastos().map((i) => (i.id === tempId ? { ...tempGasto, id: newGastoId } : i)),
+                        lastUpdated: Date.now(),
+                        searchCache: new Map()
                     });
-                })
-            )
-        ),
+                    return newGastoId;
+                } catch (error: any) {
+                    // Rollback si falla
+                    patchState(store, {
+                        gastos: store.gastos().filter((i) => i.id !== tempId),
+                        totalRecords: store.totalRecords() - 1,
+                        error: error.userMessage || 'Error al crear gasto'
+                    });
+                    throw error;
+                }
+            },
 
-        // Seleccionar gasto
-        selectGasto(gasto: Gasto | null) {
-            patchState(store, { selectedGasto: gasto });
-        },
+            // Actualizar gasto con actualización optimista
+            async updateGasto(payload: { id: string; gasto: Partial<Gasto> }): Promise<void> {
+                const { id, gasto } = payload;
 
-        // Actualizar filtros
-        setFilters(filters: Partial<GastosState['filters']>) {
-            patchState(store, {
-                filters: { ...store.filters(), ...filters }
-            });
-        },
+                // Guardar estado anterior para reversión
+                const gastoAnterior = store.gastos().find((g) => g.id === id);
 
-        // Limpiar error
-        clearError() {
-            patchState(store, { error: null });
-        }
-    };
+                // Actualización optimista
+                const gastos = store.gastos().map((g) => (g.id === id ? { ...g, ...gasto } : g));
+                patchState(store, { gastos, loading: true, error: null });
+
+                try {
+                    await firstValueFrom(gastoService.update(id, gasto));
+                    patchState(store, {
+                        loading: false,
+                        lastUpdated: Date.now(),
+                        searchCache: new Map() // Invalidar caché
+                    });
+                } catch (error: any) {
+                    // Revertir actualización optimista
+                    if (gastoAnterior) {
+                        const revertedGastos = store.gastos().map((g) => (g.id === id ? gastoAnterior : g));
+                        patchState(store, { gastos: revertedGastos });
+                    }
+
+                    patchState(store, {
+                        loading: false,
+                        error: error.userMessage || 'Error al actualizar gasto'
+                    });
+                    throw error;
+                }
+            },
+
+            // Eliminar gasto con actualización optimista
+            deleteGasto: rxMethod<string>(
+                pipe(
+                    tap((id) => {
+                        patchState(store, (state) => ({
+                            gastos: state.gastos.filter((g) => g.id !== id),
+                            totalRecords: state.totalRecords - 1,
+                            searchCache: new Map() // Invalidar caché
+                        }));
+                    }),
+                    switchMap((id) =>
+                        gastoService.delete(id).pipe(
+                            tapResponse({
+                                next: () => {
+                                    patchState(store, {
+                                        lastUpdated: Date.now()
+                                    });
+                                },
+                                error: (err: ErrorResponse) => {
+                                    console.error('[STORE] Error al eliminar gasto:', err);
+                                    patchState(store, {
+                                        error: err.detail || 'Error al eliminar gasto'
+                                    });
+                                }
+                            })
+                        )
+                    )
+                )
+            ),
+
+            // Buscar gastos con debounce
+            searchGastos: rxMethod<string>(
+                pipe(
+                    debounceTime(300), // Esperar 300ms después de dejar de escribir
+                    tap((searchTerm) => {
+                        patchState(store, {
+                            filters: { ...store.filters(), searchTerm }
+                        });
+                    })
+                )
+            ),
+
+            // Seleccionar gasto
+            selectGasto(gasto: Gasto | null) {
+                patchState(store, { selectedGasto: gasto });
+            },
+
+            // Actualizar filtros
+            setFilters(filters: Partial<GastosState['filters']>) {
+                patchState(store, {
+                    filters: { ...store.filters(), ...filters }
+                });
+            },
+
+            // Limpiar error
+            clearError() {
+                patchState(store, { error: null });
+            }
+        };
     })
 );

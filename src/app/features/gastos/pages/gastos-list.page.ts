@@ -23,6 +23,25 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
     standalone: true,
     imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, TableModule, ToolbarModule, TagModule, InputIconModule, IconFieldModule, SkeletonModule, GastoFormModalComponent, BasePageTemplateComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    styles: [`
+        /* Toolbar responsive en móvil */
+        @media screen and (max-width: 768px) {
+            :host ::ng-deep .p-toolbar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            :host ::ng-deep .p-toolbar-group-start,
+            :host ::ng-deep .p-toolbar-group-end {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            
+            :host ::ng-deep .p-toolbar-group-start {
+                margin-bottom: 0.5rem;
+            }
+        }
+    `],
     template: `
         <app-base-page-template [loading]="gastosStore.loading() && gastosStore.gastos().length === 0" [skeletonType]="'table'">
             <div class="card surface-ground px-4 py-5 md:px-6 lg:px-8">
@@ -61,11 +80,11 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         [sortOrder]="-1"
                     >
                         <ng-template #caption>
-                            <div class="flex items-center justify-between py-3 px-4">
+                            <div class="flex flex-col md:flex-row items-center justify-between gap-3 py-3 px-4">
                                 <h5 class="m-0 font-semibold text-xl">Gestión de Gastos</h5>
-                                <p-iconfield>
+                                <p-iconfield class="w-full md:w-auto">
                                     <p-inputicon styleClass="pi pi-search" />
-                                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+                                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." class="w-full" />
                                 </p-iconfield>
                             </div>
                         </ng-template>
@@ -277,20 +296,19 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
     }
 
     async onSaveGasto(gasto: Partial<Gasto>) {
-        const gastoActual = this.currentGasto();
-
-        if (gastoActual.id) {
+        if (gasto.id) {
+            // Actualizar gasto existente
             try {
-                await this.gastosStore.updateGasto({ id: gastoActual.id, gasto });
+                await this.gastosStore.updateGasto({ id: gasto.id, gasto });
                 this.showSuccess('Gasto actualizado correctamente');
                 this.gastoDialog.set(false);
                 this.currentGasto.set({});
-                // No es necesario reloadGastos() - actualización optimista ya lo hizo
+                // No reloadGastos() - optimistic update already syncs UI
             } catch (error: any) {
                 this.showError(error.userMessage || 'Error al actualizar el gasto');
             }
         } else {
-            const gastoCreate: GastoCreate = {
+            var gastoCreate: GastoCreate = {
                 conceptoId: gasto.conceptoId!,
                 categoriaId: gasto.categoriaId!,
                 proveedorId: gasto.proveedorId!,
@@ -302,14 +320,19 @@ export class GastosListPage extends BasePageComponent implements OnDestroy {
                 cuentaId: gasto.cuentaId!
             };
 
-            try {
-                await this.gastosStore.createGasto(gastoCreate);
-                this.showSuccess('Gasto creado correctamente');
-                // No es necesario reloadGastos() - actualización optimista ya lo hizo
-            } catch (error: any) {
-                this.showError(error.userMessage || 'Error al crear el gasto');
-            }
+            const displayData: Partial<Gasto> = {
+                conceptoNombre: gasto.conceptoNombre,
+                categoriaNombre: gasto.categoriaNombre,
+                cuentaNombre: gasto.cuentaNombre,
+                formaPagoNombre: gasto.formaPagoNombre,
+                proveedorNombre: gasto.proveedorNombre,
+                personaNombre: gasto.personaNombre
+            };
 
+            this.gastosStore.createGasto(gastoCreate, displayData).then(() => {
+                this.showSuccess('Gasto creado correctamente');
+            });
+            
             this.gastoDialog.set(false);
             this.currentGasto.set({});
         }

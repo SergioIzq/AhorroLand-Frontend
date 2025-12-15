@@ -241,7 +241,6 @@ export class TraspasoProgramadoFormModalComponent {
     formData: TraspasoProgramadoFormData = {
         cuentaOrigenId: undefined,
         cuentaDestinoId: undefined,
-        importe: 0,
         frecuencia: undefined,
         fechaEjecucion: null,
         activo: true,
@@ -305,7 +304,7 @@ export class TraspasoProgramadoFormModalComponent {
         this.formData = {
             cuentaOrigenId: undefined,
             cuentaDestinoId: undefined,
-            importe: 0,
+            importe: undefined,
             frecuencia: undefined,
             fechaEjecucion: null,
             activo: true,

@@ -26,13 +26,9 @@ interface MenuChangeEvent {
     providedIn: 'root'
 })
 export class LayoutService {
-    _config: layoutConfig = {
-        preset: 'Aura',
-        primary: 'emerald',
-        surface: null,
-        darkTheme: false,
-        menuMode: 'static'
-    };
+    private readonly STORAGE_KEY = 'ahorroland_layout_config';
+
+    _config: layoutConfig = this.loadConfig();
 
     _state: LayoutState = {
         staticMenuDesktopInactive: false,
@@ -79,10 +75,16 @@ export class LayoutService {
     private initialized = false;
 
     constructor() {
+        // Aplicar el tema guardado inmediatamente al cargar
+        if (typeof window !== 'undefined') {
+            this.toggleDarkMode(this._config);
+        }
+
         effect(() => {
             const config = this.layoutConfig();
             if (config) {
                 this.onConfigUpdate();
+                this.saveConfig(config);
             }
         });
 
@@ -96,6 +98,40 @@ export class LayoutService {
 
             this.handleDarkModeTransition(config);
         });
+    }
+
+    private loadConfig(): layoutConfig {
+        try {
+            if (typeof window !== 'undefined' && localStorage) {
+                const savedConfig = localStorage.getItem(this.STORAGE_KEY);
+                if (savedConfig) {
+                    return { ...this.getDefaultConfig(), ...JSON.parse(savedConfig) };
+                }
+            }
+        } catch (error) {
+            console.error('Error loading layout config from localStorage:', error);
+        }
+        return this.getDefaultConfig();
+    }
+
+    private saveConfig(config: layoutConfig): void {
+        try {
+            if (typeof window !== 'undefined' && localStorage) {
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(config));
+            }
+        } catch (error) {
+            console.error('Error saving layout config to localStorage:', error);
+        }
+    }
+
+    private getDefaultConfig(): layoutConfig {
+        return {
+            preset: 'Aura',
+            primary: 'emerald',
+            surface: null,
+            darkTheme: false,
+            menuMode: 'static'
+        };
     }
 
     private handleDarkModeTransition(config: layoutConfig): void {
