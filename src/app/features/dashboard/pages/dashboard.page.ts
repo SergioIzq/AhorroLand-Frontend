@@ -17,7 +17,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
     template: `
         <app-base-page-template [loading]="dashboardStore.loading()" [skeletonType]="'card'">
             @if (dashboardStore.resumen()) {
-                <!-- Header -->
                 <div class="card flex items-center justify-between flex-wrap gap-3 mb-5 h-full">
                     <div>
                         <h1 class="text-900 font-bold text-3xl md:text-4xl m-0 mb-2">Panel de Control</h1>
@@ -28,7 +27,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </div>
                 </div>
 
-                <!-- Alertas -->
                 @if (dashboardStore.resumen()?.alertas && dashboardStore.resumen()!.alertas.length > 0) {
                     <div class="mb-4">
                         <h5 class="text-900 font-semibold text-xl mb-3 flex items-center gap-2">Alertas y Notificaciones</h5>
@@ -51,7 +49,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                 @if (dashboardStore.presupuestoAnual() && dashboardStore.presupuestoAnual().length > 0) {
                     <div class="mb-4">
                         <div class="card shadow-2 p-0 overflow-hidden surface-card">
-                            <div class="p-4 border-b surface-border bg-gray-50 flex justify-between items-center">
+                            <div class="p-4 border-b surface-border surface-ground flex justify-between items-center">
                                 <div class="flex flex-col">
                                     <h5 class="text-900 font-bold text-xl m-0 flex items-center gap-2">
                                         <i class="pi pi-briefcase text-primary"></i>
@@ -64,9 +62,9 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                             <div class="overflow-y-auto custom-scrollbar" style="max-height: 400px;">
                                 <div class="flex flex-col divide-y surface-border">
                                     @for (anio of dashboardStore.presupuestoAnual(); track anio.anio; let first = $first) {
-                                        <div [class]="'p-4 hover:surface-hover transition-colors grid grid-cols-1 md:grid-cols-3 gap-4 items-center ' + (first ? 'bg-blue-50/50' : '')">
+                                        <div [class]="'p-4 hover:surface-hover transition-colors grid grid-cols-1 md:grid-cols-3 gap-4 items-center ' + (first ? 'surface-ground font-medium' : '')">
                                             <div class="flex items-center gap-3">
-                                                <div [class]="'w-3rem h-3rem border-round flex items-center justify-center shadow-1 ' + (first ? 'bg-primary text-white' : 'surface-100 text-500')">
+                                                <div [class]="'w-3rem h-3rem border-round flex items-center justify-center shadow-1 ' + (first ? 'bg-primary text-white' : 'surface-200 text-500')">
                                                     <i class="pi pi-calendar text-xl"></i>
                                                 </div>
                                                 <div>
@@ -77,7 +75,9 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
 
                                             <div class="md:text-center">
                                                 <div class="text-xs text-500 uppercase font-semibold mb-1">Necesario para vivir</div>
-                                                <div [class]="'text-2xl font-bold ' + (first ? 'text-primary' : 'text-700')">{{ anio.promedioMensualNecesario | number: '1.0-0' }} € <span class="text-sm font-normal text-500">/mes</span></div>
+                                                <div [class]="'text-2xl font-bold ' + (first ? 'text-primary' : 'text-700')">
+                                                    {{ anio.promedioMensualNecesario | number: '1.0-0' }} € <span class="text-sm font-normal text-500">/mes</span>
+                                                </div>
                                             </div>
 
                                             <div class="md:text-right flex md:flex-col items-center md:items-end justify-between md:justify-center">
@@ -95,19 +95,18 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </div>
                 }
 
-                <!-- Resumen Financiero Principal -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <!-- Balance Total -->
                     <div class="card shadow-2 border-round p-4 flex flex-col h-full">
                         <div class="flex items-center justify-between mb-3">
                             <div class="text-500 font-medium">Balance Total</div>
                             <i class="pi pi-wallet text-primary" style="font-size: 1.5rem"></i>
                         </div>
-                        <div [class]="'font-bold text-3xl mb-2 ' + (dashboardStore.resumen()!.balanceTotal >= 0 ? 'text-green-500' : 'text-red-500')">{{ dashboardStore.resumen()!.balanceTotal | number: '1.2-2' }} €</div>
+                        <div [class]="'font-bold text-3xl mb-2 ' + (dashboardStore.resumen()!.balanceTotal >= 0 ? 'text-green-500' : 'text-red-500')">
+                            {{ dashboardStore.resumen()!.balanceTotal | number: '1.2-2' }} €
+                        </div>
                         <div class="text-500 text-sm mt-auto">{{ dashboardStore.resumen()?.totalCuentas || 0 }} cuentas</div>
                     </div>
 
-                    <!-- Ingresos Mes Actual -->
                     <div class="card shadow-2 border-round p-4 flex flex-col h-full">
                         <div class="flex items-center justify-between mb-3">
                             <div class="text-500 font-medium">Ingresos Mes Actual</div>
@@ -126,7 +125,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         </div>
                     </div>
 
-                    <!-- Gastos Mes Actual -->
                     <div class="card shadow-2 border-round p-4 flex flex-col h-full">
                         <div class="flex items-center justify-between mb-3">
                             <div class="text-500 font-medium">Gastos Mes Actual</div>
@@ -145,20 +143,19 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         </div>
                     </div>
 
-                    <!-- Balance Mes Actual -->
                     <div class="card shadow-2 border-round p-4 flex flex-col h-full">
                         <div class="flex items-center justify-between mb-3">
                             <div class="text-500 font-medium">Balance Mes Actual</div>
                             <i [class]="'pi ' + (dashboardStore.resumen()!.balanceMesActual >= 0 ? 'pi-check-circle text-green-500' : 'pi-times-circle text-red-500')" style="font-size: 1.5rem"></i>
                         </div>
-                        <div [class]="'font-bold text-3xl mb-2 ' + (dashboardStore.resumen()!.balanceMesActual >= 0 ? 'text-green-500' : 'text-red-500')">{{ dashboardStore.resumen()!.balanceMesActual | number: '1.2-2' }} €</div>
+                        <div [class]="'font-bold text-3xl mb-2 ' + (dashboardStore.resumen()!.balanceMesActual >= 0 ? 'text-green-500' : 'text-red-500')">
+                            {{ dashboardStore.resumen()!.balanceMesActual | number: '1.2-2' }} €
+                        </div>
                         <div class="text-500 text-sm mt-auto">Ingresos - Gastos</div>
                     </div>
                 </div>
 
-                <!-- Cuentas y Top Categorías -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                    <!-- Cuentas -->
                     <div class="card shadow-2 border-round p-4 h-full">
                         <h5 class="text-900 font-semibold text-xl mb-4 flex items-center gap-2">
                             <i class="pi pi-credit-card text-primary"></i>
@@ -177,7 +174,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                         </div>
                     </div>
 
-                    <!-- Top Categorías de Gastos -->
                     <div class="card shadow-2 border-round p-4 h-full">
                         <h5 class="text-900 font-semibold text-xl mb-4 flex items-center gap-2">
                             <i class="pi pi-chart-pie text-orange-500"></i>
@@ -205,7 +201,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </div>
                 </div>
 
-                <!-- Estadísticas y Proyecciones -->
                 <div class="card shadow-2 border-round p-4 mb-4 h-full">
                     <h5 class="text-900 font-semibold text-xl mb-4">Estadísticas del Mes</h5>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -235,7 +230,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </div>
                 </div>
 
-                <!-- Últimos Movimientos -->
                 <div class="card shadow-2 border-round p-4 mb-4 h-full">
                     <h5 class="text-900 font-semibold text-xl mb-4 flex items-center gap-2">
                         <i class="pi pi-list text-cyan-500"></i>
@@ -262,14 +256,11 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </div>
                 </div>
 
-                <!-- Charts y Comparativa -->
                 <div class="grid grid-cols-1 gap-4 mb-4">
-                    <!-- Histórico 6 meses -->
                     <div class="w-full">
                         <app-resumen-financiero />
                     </div>
 
-                    <!-- Gastos e Ingresos lado a lado -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div class="w-full">
                             <app-gastos-chart />
@@ -281,7 +272,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </div>
                 </div>
 
-                <!-- Histórico Últimos 6 Meses -->
                 @if (dashboardStore.resumen()?.historicoUltimos6Meses && dashboardStore.resumen()!.historicoUltimos6Meses.length > 0) {
                     <div class="card shadow-2 border-round p-4 mb-4 h-full">
                         <h5 class="text-900 font-semibold text-xl mb-4 flex items-center gap-2">
@@ -313,7 +303,6 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                     </div>
                 }
 
-                <!-- Quick Actions -->
                 <div class="card shadow-2 border-round p-4 h-full">
                     <h5 class="text-900 font-semibold text-xl mb-4">Acciones Rápidas</h5>
                     <div class="flex flex-wrap gap-3">
@@ -332,16 +321,18 @@ export class DashboardPage extends BasePageComponent {
     protected override loadingSignal = this.dashboardStore.loading;
     protected override skeletonType = 'card' as const;
 
-    // Exponer Math para usar en el template
     Math = Math;
 
     getAlertaClass(tipo: string): string {
         const classes: Record<string, string> = {
-            danger: 'border-red-500 bg-red-50',
-            warning: 'border-orange-500 bg-orange-50',
-            info: 'border-blue-500 bg-blue-50',
-            success: 'border-green-500 bg-green-50'
+            // Using surface-card for background to adapt to theme, keeping borders for color indication
+            // Alternatively, use semantic colors like 'bg-red-50 dark:bg-red-900/20' if available in your utility config
+            danger: 'border-red-500 surface-50 text-red-700',
+            warning: 'border-orange-500 surface-50 text-orange-700',
+            info: 'border-blue-500 surface-50 text-blue-700',
+            success: 'border-green-500 surface-50 text-green-700'
         };
-        return classes[tipo] || 'border-gray-500 bg-gray-50';
+        // Fallback
+        return classes[tipo] || 'border-gray-500 surface-50 text-700';
     }
 }
