@@ -164,7 +164,7 @@ import { TraspasoProgramadoFormModalComponent } from '../components/traspaso-pro
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="font-bold text-blue-600">{{ traspaso.importe | number: '1.2-2' }} €</span>
+                                    <span class="font-bold text-blue-600">{{ traspaso.importe | number: '1.2-2' : 'es-ES' }} €</span>
                                 </td>
                                 <td>
                                     <p-tag [value]="traspaso.frecuencia" [severity]="getFrecuenciaSeverity(traspaso.frecuencia)" />

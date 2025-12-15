@@ -109,7 +109,7 @@ import { IngresoProgramadoFormModalComponent } from '../components/ingreso-progr
                         <ng-template #body let-ingreso>
                             <tr>
                                 <td style="padding: 1rem">
-                                    <span class="font-bold text-green-600">{{ ingreso.importe | number: '1.2-2' }} €</span>
+                                    <span class="font-bold text-green-600">{{ ingreso.importe | number: '1.2-2' : 'es-ES' }} €</span>
                                 </td>
                                 <td>
                                     <p-tag [value]="ingreso.frecuencia" [severity]="getFrecuenciaSeverity(ingreso.frecuencia)" />

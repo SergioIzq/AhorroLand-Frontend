@@ -139,7 +139,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                                 </td>
                                 <td>{{ ingreso.cuentaNombre || '-' }}</td>
                                 <td>
-                                    <span class="font-bold text-green-500">{{ ingreso.importe | number: '1.2-2' }} €</span>
+                                    <span class="font-bold text-green-500">{{ ingreso.importe | number: '1.2-2' : 'es-ES' }} €</span>
                                 </td>
                                 <td>
                                     <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editIngreso(ingreso)" />

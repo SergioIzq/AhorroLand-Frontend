@@ -106,7 +106,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                                     </div>
                                 </td>
                                 <td>
-                                    <span [class]="'font-bold ' + (cuenta.saldo >= 0 ? 'text-green-600' : 'text-red-600')"> {{ cuenta.saldo | number: '1.2-2' }} € </span>
+                                    <span [class]="'font-bold ' + (cuenta.saldo >= 0 ? 'text-green-600' : 'text-red-600')"> {{ cuenta.saldo | number: '1.2-2' : 'es-ES' }} € </span>
                                 </td>
                                 <td>
                                     <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editCuenta(cuenta)" />

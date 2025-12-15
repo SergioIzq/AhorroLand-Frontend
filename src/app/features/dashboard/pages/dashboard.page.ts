@@ -130,7 +130,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                                     <span class="font-medium text-900">{{ cuenta.nombre }}</span>
                                 </div>
                                 <span [class]="'font-bold ' + (cuenta.saldo >= 0 ? 'text-green-600' : 'text-red-600')">
-                                    {{ cuenta.saldo | number:'1.2-2' }} €
+                                    {{ cuenta.saldo | number:'1.2-2':'es-ES' }} €
                                 </span>
                             </div>
                         }
@@ -220,7 +220,7 @@ import { BasePageComponent, BasePageTemplateComponent } from '@/shared/component
                             </div>
                             <div class="text-right">
                                 <div [class]="'font-bold text-lg ' + (movimiento.tipo === 'Ingreso' ? 'text-green-600' : 'text-red-600')">
-                                    {{ (movimiento.tipo === 'Ingreso' ? '+' : '-') }}{{ movimiento.importe | number:'1.2-2' }} €
+                                    {{ (movimiento.tipo === 'Ingreso' ? '+' : '-') }}{{ movimiento.importe | number:'1.2-2':'es-ES' }} €
                                 </div>
                                 <div class="text-500 text-sm">{{ movimiento.fecha | date:'dd/MM/yyyy' }}</div>
                             </div>

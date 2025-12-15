@@ -109,7 +109,7 @@ import { GastoProgramadoFormModalComponent } from '../components/gasto-programad
                         <ng-template #body let-gasto>
                             <tr>
                                 <td style="padding: 1rem">
-                                    <span class="font-bold text-red-600">{{ gasto.importe | number: '1.2-2' }} €</span>
+                                    <span class="font-bold text-red-600">{{ gasto.importe | number: '1.2-2' : 'es-ES' }} €</span>
                                 </td>
                                 <td>
                                     <p-tag [value]="gasto.frecuencia" [severity]="getFrecuenciaSeverity(gasto.frecuencia)" />

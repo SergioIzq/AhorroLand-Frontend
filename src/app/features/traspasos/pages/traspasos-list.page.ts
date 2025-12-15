@@ -107,7 +107,7 @@ import { TraspasoFormModalComponent } from '../components/traspaso-form-modal.co
                                     {{ traspaso.fecha | date: 'dd/MM/yyyy' }}
                                 </td>
                                 <td>
-                                    <span class="font-bold text-blue-600">{{ traspaso.importe | number: '1.2-2' }} €</span>
+                                    <span class="font-bold text-blue-600">{{ traspaso.importe | number: '1.2-2' : 'es-ES' }} €</span>
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-2">
