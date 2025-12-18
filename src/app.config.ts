@@ -21,7 +21,7 @@ export const appConfig: ApplicationConfig = {
             appRoutes,
             withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
             withEnabledBlockingInitialNavigation(),
-            withPreloading(PreloadAllModules) // Precargar todos los módulos para máxima velocidad
+            withPreloading(PreloadAllModules)
         ),
         provideHttpClient(
             withFetch(),
@@ -42,12 +42,11 @@ export const appConfig: ApplicationConfig = {
         }),
         MessageService,
         ConfirmationService,
-        { provide: LOCALE_ID, useValue: 'es-ES' }, provideServiceWorker('ngsw-worker.js', {
+        { provide: LOCALE_ID, useValue: 'es-ES' },
+        // Aquí estaba el error, lo he dejado una sola vez:
+        provideServiceWorker('ngsw-worker.js', {
             enabled: !isDevMode(),
             registrationStrategy: 'registerWhenStable:30000'
-          }), provideServiceWorker('ngsw-worker.js', {
-            enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
-          })
+        })
     ]
 };
