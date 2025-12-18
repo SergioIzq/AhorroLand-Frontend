@@ -19,7 +19,16 @@ export class AuthService {
     }
 
     register(payload: { correo: string; contrasena: string; nombre: string; apellidos?: string }): Observable<string> {
-        return this.http.post<Result<string>>(`${this.apiUrl}/register`, payload).pipe(map((res) => res.value));
+        return this.http.post<Result<string>>(`${this.apiUrl}/register`, payload, { observe: 'response' }).pipe(
+            map((response) => {
+                // Si es 204, no hay body
+                if (response.status === 204) {
+                    return 'Usuario registrado correctamente. Revisa tu correo para confirmar tu cuenta.';
+                }
+                // Si hay body, extraer el valor
+                return response.body?.value || 'Usuario registrado correctamente. Revisa tu correo para confirmar tu cuenta.';
+            })
+        );
     }
 
     confirmEmail(token: string): Observable<string> {
